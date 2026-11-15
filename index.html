@@ -67,6 +67,12 @@ h3{margin:4px 0 8px;color:var(--sun);font-size:16px}
 body.touch #np{bottom:auto;top:80px}
 #tip{position:fixed;z-index:40;pointer-events:none;display:none;background:#0b1528;border:2px solid #fff;box-shadow:3px 3px 0 #000;padding:5px 9px;font-size:13px;line-height:1.5;max-width:260px}
 #tip b{color:var(--sun)}#tip small{color:#b8c8e0}
+#hbGrid{grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}#hbGrid .slot{width:auto;height:auto;aspect-ratio:1}#hbGrid .slot img{width:62%;height:62%;left:19%;top:16%}#hbGrid .slot span{font-size:11px}
+.tierh{font-size:13px;font-weight:700;color:var(--wind);margin:10px 0 5px;border-bottom:1px dashed #33507f;padding-bottom:3px}
+.slot{touch-action:none}.slot img,.card canvas{pointer-events:none;-webkit-user-drag:none;user-select:none}.box{touch-action:pan-y}
+.hbs{border-color:#5e7aa8}.hbs.sel{border-color:var(--sun);box-shadow:0 0 0 2px #000}.hbs b{position:absolute;left:3px;top:0;font-size:11px;color:#9fb6d6}
+.slot.dropok{border-color:#7dff7a!important;background:#173a24}
+#dragGhost{position:fixed;z-index:50;pointer-events:none;width:40px;height:40px;image-rendering:pixelated;display:none;filter:drop-shadow(2px 2px 0 #000)}
 #touch{display:none}
 body.touch #touch{display:block}
 body.touch #log{bottom:150px}
@@ -88,6 +94,7 @@ body.touch #log{bottom:150px}
 <div id="itemName"></div>
 <div id="np"></div>
 <div id="tip"></div>
+<img id="dragGhost" alt="">
 <div id="touch">
   <div id="joy"><div id="knob"></div></div>
   <div class="tb" id="tJump">跳</div>
@@ -145,8 +152,8 @@ body.touch #log{bottom:150px}
 
 <div class="ov" id="panel"><div class="box">
   <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">背包 & 合成台</h3><button class="sb" id="bClose">關閉 (E)</button></div>
-  <p class="hint">點背包裡的物品 → 放進目前選取的快捷欄格子（黃框＝已在快捷欄）。</p>
-  <div class="cols"><div><h3>背包</h3><div class="inv" id="invGrid"></div><h3 style="margin-top:14px">裝扮（點背包裡的配件穿上）</h3><div class="inv" id="eqGrid"></div><h3 style="margin-top:14px">寵物</h3><div id="petList"></div></div><div><h3>合成</h3><div id="recipes"></div></div></div>
+  <p class="hint">把背包的物品<b>拖到上方快捷欄</b>就能設定；也可以先點快捷欄選一格，再點背包物品放進去。</p>
+  <div class="cols"><div><h3>快捷欄 <small style="color:#9fb6d6;font-weight:400">（把背包物品拖上來；拖出去就移除）</small></h3><div class="inv" id="hbGrid"></div><h3 style="margin-top:12px">背包</h3><div class="inv" id="invGrid"></div><h3 style="margin-top:14px">裝扮（點背包裡的配件穿上）</h3><div class="inv" id="eqGrid"></div><h3 style="margin-top:14px">寵物</h3><div id="petList"></div></div><div><h3>合成</h3><div id="recipes"></div></div></div>
 </div></div>
 
 <div class="ov" id="dead"><div class="box">
@@ -291,7 +298,11 @@ const AIR=0,GRASS=1,DIRT=2,SAND=3,STONE=4,SALT=5,LOG=6,LEAF=7,WATER=8,PLANK=9,TO
 const PALM_LOG=15,PALM_LEAF=16,HIB_LEAF=17,MANG_LEAF=18,GLASS=24,WHITE=25,DOOR=26,DOOR_O=27;
 const BL={1:{n:'草地',h:.5,drop:2},2:{n:'泥土',h:.5},3:{n:'沙灘',h:.4},4:{n:'咾咕石',h:1.6},5:{n:'鹽塊',h:.8},6:{n:'木麻黃原木',h:1.1},7:{n:'木麻黃葉',h:.25},8:{n:'海水',h:2},9:{n:'木板',h:.9},10:{n:'火把',h:.05},11:{n:'鹽田瓦盤',h:.7},12:{n:'蚵殼堆',h:.9},13:{n:'基岩',h:Infinity},14:{n:'鹽燈',h:.5}};
 Object.assign(BL,{28:{n:'農田',h:.5,drop:2},29:{n:'濕潤農田',h:.5,drop:2},30:{n:'黃豆幼苗',h:.05},31:{n:'黃豆',h:.05},32:{n:'黃豆',h:.05},33:{n:'黃豆（可收成）',h:.05},34:{n:'地瓜幼苗',h:.05},35:{n:'地瓜',h:.05},36:{n:'地瓜',h:.05},37:{n:'地瓜（可收成）',h:.05},38:{n:'洋香瓜幼苗',h:.05},39:{n:'洋香瓜',h:.05},40:{n:'洋香瓜',h:.05},41:{n:'洋香瓜（可收成）',h:.05},15:{n:'椰子樹幹',h:1},16:{n:'椰子葉',h:.25},17:{n:'黃槿葉',h:.25},18:{n:'海茄苳葉',h:.25},19:{n:'馬鞍藤',h:.05},20:{n:'文殊蘭',h:.05},21:{n:'天人菊',h:.05},22:{n:'蔓荊',h:.05},23:{n:'海馬齒',h:.05},24:{n:'水晶玻璃',h:.5},25:{n:'白色石材',h:1.2},26:{n:'水晶門',h:.8},27:{n:'水晶門',h:.8,drop:26}});
-const ITEMS={100:{n:'木劍',dmg:4},101:{n:'咾咕石劍',dmg:6},102:{n:'虱目魚',food:3,heal:0},103:{n:'鹽烤虱目魚',food:9,heal:4},104:{n:'蟹肉',food:3,heal:0},105:{n:'鹽焗蟹',food:8,heal:3},106:{n:'鹽晶'},108:{n:'鹽晶護符',desc:'放背包裡：受到傷害 -35%'},110:{n:'鹽工斗笠',slot:'head',desc:'頭飾：白天比較不容易餓'},111:{n:'花冠',slot:'head',desc:'頭飾：抓寵物時判定區變大'},112:{n:'墨鏡',slot:'face',desc:'臉部：阿鹹同款！白天陽光不刺眼，移動、挖掘速度 +15%，鏡片還會閃光'},113:{n:'斜背包',slot:'body',desc:'身上：採集時 25% 機率多得 1 個'},119:{n:'金鉗',dmg:8,rare:1,desc:'稀有寶物（夜潮蟹 5%）：金光閃閃的大鉗子，攻擊力 8'},120:{n:'霧光提燈',rare:1,desc:'稀有寶物（霧魂 3%）：放背包裡，身上的光變大，霧魂不敢靠近你'},121:{n:'鹽之王冠',slot:'head',rare:1,desc:'稀有寶物（鹽堆巨人 35%）：頭飾，最大血量 +6（3 顆心）'},130:{n:'鋤頭',desc:'拿著對草地、泥土或沙地按右鍵，翻成農田（靠近水會變成濕潤農田，長得比較快）'},131:{n:'黃豆種子',desc:'拿著對農田按右鍵種下；收成的黃豆可以做鹽滷豆花'},132:{n:'地瓜苗',desc:'拿著對農田按右鍵種下'},133:{n:'洋香瓜種子',desc:'七股、北門一帶的名產！拿著對農田按右鍵種下'},134:{n:'黃豆',desc:'做鹽滷豆花的材料'},135:{n:'地瓜',food:2,heal:0},136:{n:'洋香瓜',food:6,heal:3,desc:'香甜多汁'},137:{n:'烤地瓜',food:7,heal:2},138:{n:'鹽滷豆花',food:10,heal:6,desc:'用曬鹽留下的鹽滷點成的豆花，吃了 40 秒內快速回血'},116:{n:'捕捉網',desc:'拿在手上，點動物開始捕捉'},117:{n:'魚餌',desc:'拿在手上按右鍵放在地上，吸引動物'}};
+const ITEMS={100:{n:'木劍',dmg:4},101:{n:'咾咕石劍',dmg:6},102:{n:'虱目魚',food:3,heal:0},103:{n:'鹽烤虱目魚',food:9,heal:4},104:{n:'蟹肉',food:3,heal:0},105:{n:'鹽焗蟹',food:8,heal:3},106:{n:'鹽晶'},108:{n:'鹽晶護符',desc:'放背包裡：受到傷害 -35%'},110:{n:'鹽工斗笠',slot:'head',desc:'頭飾：白天比較不容易餓'},111:{n:'花冠',slot:'head',desc:'頭飾：抓寵物時判定區變大'},112:{n:'墨鏡',slot:'face',desc:'臉部：阿鹹同款！白天陽光不刺眼，移動、挖掘速度 +15%，鏡片還會閃光'},113:{n:'斜背包',slot:'body',desc:'身上：採集時 25% 機率多得 1 個'},119:{n:'金鉗',dmg:8,rare:1,desc:'稀有寶物（夜潮蟹 5%）：金光閃閃的大鉗子，攻擊力 8'},120:{n:'霧光提燈',rare:1,desc:'稀有寶物（霧魂 3%）：放背包裡，身上的光變大，霧魂不敢靠近你'},121:{n:'鹽之王冠',slot:'head',rare:1,desc:'稀有寶物（鹽堆巨人 35%）：頭飾，最大血量 +6（3 顆心）'},130:{n:'鋤頭',desc:'拿著對草地、泥土或沙地按右鍵，翻成農田（靠近水會變成濕潤農田，長得比較快）'},131:{n:'黃豆種子',desc:'拿著對農田按右鍵種下；收成的黃豆可以做鹽滷豆花'},132:{n:'地瓜苗',desc:'拿著對農田按右鍵種下'},133:{n:'洋香瓜種子',desc:'七股、北門一帶的名產！拿著對農田按右鍵種下'},134:{n:'黃豆',desc:'做鹽滷豆花的材料'},135:{n:'地瓜',food:2,heal:0},136:{n:'洋香瓜',food:6,heal:3,desc:'香甜多汁'},137:{n:'烤地瓜',food:7,heal:2},138:{n:'鹽滷豆花',food:10,heal:6,desc:'用曬鹽留下的鹽滷點成的豆花，吃了 40 秒內快速回血'},140:{n:'探險帽',slot:'head',desc:'阿皮的觀鳥裝扮｜頭飾：動物比較不會被你嚇跑（察覺距離 -40%）'},141:{n:'收音耳機',slot:'head',desc:'阿光的錄音裝備｜頭飾：聽得見 16 格內的怪物，畫面邊緣會出現紅色箭頭'},142:{n:'探險背心',slot:'body',desc:'口袋超多｜身上：吃東西時飽足 +30%'},
+143:{n:'放大鏡',slot:'hand',desc:'阿皮的觀察工具｜手持：挖草地找到種子的機率 12% → 35%'},144:{n:'雙筒望遠鏡',slot:'hand',desc:'阿咻的望遠鏡｜手持：挖掘、放置距離 +1.5 格'},145:{n:'鳥類圖鑑',slot:'hand',desc:'阿波的圖鑑｜手持：抓寵物時計時條變慢 30%'},
+146:{n:'平安令旗',slot:'hand',desc:'鯤鯓王平安鹽祭｜手持：揮舞令旗，攻擊力 +2'},147:{n:'草藥缽',slot:'hand',desc:'阿咻的藥缽｜手持：吃東西回血 +50%（至少多回半顆心）'},148:{n:'開運毛筆',slot:'hand',desc:'鹹味兄弟的魔法小工具｜手持：畫符保平安，夜晚怪物數量上限 -30%'},
+149:{n:'王令',slot:'hand',desc:'阿波拿的王令｜手持：釣魚、曬鹽成功率 +30%，偶爾會有魚跳到頭上'},150:{n:'羅盤',slot:'hand',desc:'阿光的羅盤｜手持：畫面左上顯示回水晶教堂的方向；夜晚移動 +10%'},151:{n:'七星寶劍',dmg:7,desc:'阿光偷學的寶劍｜武器：攻擊力 7，砍霧魂傷害加倍'},
+116:{n:'捕捉網',desc:'拿在手上，點動物開始捕捉'},117:{n:'魚餌',desc:'拿在手上按右鍵放在地上，吸引動物'}};
 const nameOf=id=>id<100?BL[id].n:ITEMS[id].n;
 const placeable=id=>id>0&&id<100&&id!==WATER&&id!==BEDROCK&&id!==27;
 const solid=id=>id!==AIR&&id!==WATER&&id!==TORCH&&!(id>=19&&id<=23)&&id!==27&&!(id>=30&&id<=41);
@@ -484,6 +495,18 @@ function makeIcon(id){
  else if(id===136){gell(g,8,9,6,5.5,'#d9e3a0');for(let y=5;y<14;y++)for(let x=3;x<14;x++)if((x+y)%4===0&&Math.hypot(x-8,y-9)<5)gs(g,x,y,'#b0bd6c');gs(g,8,3,'#4f8f3a');gs(g,9,2,'#4f8f3a')}
  else if(id===137){gell(g,8,9,6,3,'#7a3a2a');gell(g,8,8,3.5,1.3,'#ffd23f');gs(g,7,8,'#fff2a0')}
  else if(id===138){gpoly(g,[[2,8],[14,8],[12,14],[4,14]],'#4b9bea');grect(g,1,7,14,1,'#7cb8f2');gell(g,8,7,5.5,1.6,'#ffffff');grect(g,5,6,3,1,'#b5793a');gs(g,10,7,'#b5793a');gs(g,6,11,'#ffffff')}
+ else if(id===140){gell(g,8,11,7.5,2.2,'#c8a46a');grect(g,4,5,8,6,'#b08850');grect(g,4,9,8,1,'#5a3d24');grect(g,5,4,6,1,'#b08850')}
+ else if(id===141){for(let i=0;i<=12;i++){const a=Math.PI+Math.PI*i/12;gs(g,8+Math.cos(a)*6,9+Math.sin(a)*6,'#333')}grect(g,0,8,4,6,'#ff5e2c');grect(g,12,8,4,6,'#ff5e2c');grect(g,1,10,2,2,'#4b9bea');grect(g,13,10,2,2,'#4b9bea')}
+ else if(id===142){gpoly(g,[[3,2],[6,2],[8,7],[10,2],[13,2],[14,15],[2,15]],'#c8a46a');grect(g,4,10,3,2,'#a8844a');grect(g,9,10,3,2,'#a8844a');gline(g,8,7,8,14,'#8a6a3a')}
+ else if(id===143){gell(g,6,6,4.5,4.5,'#ff5e2c');gell(g,6,6,3,3,'#bfe6ff');gs(g,5,5,'#ffffff');gline(g,9,9,14,14,'#7a5230');gline(g,10,9,14,13,'#7a5230')}
+ else if(id===144){grect(g,1,5,5,8,'#ff5e2c');grect(g,10,5,5,8,'#ff5e2c');grect(g,6,7,4,3,'#333');grect(g,2,12,3,2,'#bfe6ff');grect(g,11,12,3,2,'#bfe6ff');gs(g,2,6,'#ff9a6c');gs(g,11,6,'#ff9a6c')}
+ else if(id===145){grect(g,2,2,12,12,'#d8342c');grect(g,2,2,2,12,'#9a2420');grect(g,13,3,1,10,'#ffffff');gell(g,9,8,2.5,1.6,'#ffffff');gs(g,11,7,'#ffffff');gs(g,12,7,'#ffd23f');gs(g,7,9,'#ffffff')}
+ else if(id===146){gline(g,3,1,3,15,'#7a5230');gpoly(g,[[4,2],[15,5.5],[4,10]],'#ff5e2c');gpoly(g,[[5,4],[10,5.5],[5,7.5]],'#ffd23f')}
+ else if(id===147){gpoly(g,[[1,8],[15,8],[12,14],[4,14]],'#ffd23f');grect(g,1,8,15,1,'#ffe680');gline(g,7,8,10,1,'#4f9a45');gline(g,6,8,3,3,'#5aa84d');gs(g,9,3,'#5aa84d');gline(g,12,7,15,11,'#c9a000')}
+ else if(id===148){gline(g,2,14,10,6,'#d8342c');gline(g,3,14,11,6,'#d8342c');grect(g,10,4,2,2,'#ffd23f');gpoly(g,[[11,4],[15,0],[13,5]],'#222')}
+ else if(id===149){grect(g,5,1,6,10,'#ffd23f');grect(g,5,1,6,1,'#ffe680');for(const y of [3,5,7])grect(g,7,y,2,1,'#d8342c');grect(g,7,11,2,4,'#c9a000')}
+ else if(id===150){gell(g,8,8,6.5,6.5,'#d9b56a');gell(g,8,8,4.6,4.6,'#f4f6f8');gline(g,8,8,8,4,'#d8342c');gline(g,8,9,8,12,'#4b9bea');gs(g,8,8,'#333')}
+ else if(id===151){for(let i=0;i<9;i++){gs(g,5+i,10-i,'#e8eef2');gs(g,6+i,10-i,'#e8eef2');gs(g,6+i,11-i,'#a9b6bf')}for(const i of [1,3,5,7])gs(g,6+i,10-i,'#ffd23f');gline(g,2,8,6,12,'#ffd23f');gline(g,4,10,1,13,'#7a5230');gs(g,0,14,'#d8342c');gs(g,1,15,'#d8342c')}
  else if(id===110){gpoly(g,[[1,11],[15,11],[8,4]],'#d9b56a');grect(g,0,11,16,2,'#b08a45');gline(g,5,8,11,8,'#c49a50')}
  else if(id===111){for(let i=0;i<14;i++){const a=i/14*Math.PI*2;gs(g,8+Math.cos(a)*5.5,8+Math.sin(a)*3.5,['#d94fa3','#ffd23f','#ffffff','#d8342c','#4f9a45'][i%5])}}
  else if(id===112){grect(g,2,6,5,3,'#111');grect(g,9,6,5,3,'#111');grect(g,7,6,2,1,'#111');gs(g,3,6,'#5fb6ef');gs(g,10,6,'#5fb6ef')}
@@ -493,7 +516,7 @@ function makeIcon(id){
  else if(id===108){gline(g,3,1,8,6,'#9c7340');gline(g,13,1,8,6,'#9c7340');gpoly(g,[[8,5],[12,10],[8,15],[4,10]],'#badcdc');gpoly(g,[[8,5],[12,10],[8,10]],'#ffffff');}
  goutline(g);const s=gcanvas(g);c.drawImage(s,0,0);return cv;
 }
-function buildIcons(){for(const id of [1,2,3,4,5,6,7,9,10,11,12,14,15,16,17,18,19,20,21,22,23,24,25,26,100,101,102,103,104,105,106,108,110,111,112,113,116,117,119,120,121,130,131,132,133,134,135,136,137,138]){ICON[id]=makeIcon(id);ICONURL[id]=ICON[id].toDataURL()}}
+function buildIcons(){for(const id of [1,2,3,4,5,6,7,9,10,11,12,14,15,16,17,18,19,20,21,22,23,24,25,26,100,101,102,103,104,105,106,108,110,111,112,113,116,117,119,120,121,140,141,142,143,144,145,146,147,148,149,150,151,130,131,132,133,134,135,136,137,138]){ICON[id]=makeIcon(id);ICONURL[id]=ICON[id].toDataURL()}}
 
 /* ================= WORLD ================= */
 let world=new Uint8Array(W*D*H);
@@ -621,7 +644,7 @@ const ANCH={
  apo:{top:14,cx:12,gl:[[8,18],[12,18]],gw:4,gh:3,strap:[[4,17],[19,25]],bag:[15,22]},
  ahsiu:{top:4,cx:10,gl:[[5,10],[9,10]],gw:4,gh:3,strap:[[8,18],[13,24]],bag:[11,22]},
 };
-let eq={head:0,face:0,body:0};
+let eq={head:0,face:0,body:0,hand:0};
 const PSPR={};
 function playerSpr(id,back,fr){const k=[id,back,fr,eq.head,eq.face,eq.body].join('|');if(PSPR[k])return PSPR[k];
  const base=drawChar(id,back,fr,true);const A=ANCH[id];const g=grid(28,38);
@@ -637,6 +660,9 @@ function playerSpr(id,back,fr){const k=[id,back,fr,eq.head,eq.face,eq.body].join
  if(eq.head===121){const t=A.top,c=A.cx;Rr(c-5,t,10,2,'#ffd23f');Rr(c-5,t+1,10,1,'#c9a000');for(const x of [c-5,c-1,c+4]){P(x,t-1,'#ffd23f');P(x,t-2,'#ffd23f')}P(c,t-1,'#ffd23f');P(c-1,t-3,'#ffffff');P(c,t-2,'#ffffff');P(c-3,t,'#4b9bea');P(c+2,t,'#ff5e2c')}
  if(eq.head===110){const t=A.top,c=A.cx;Rr(c-7,t+1,14,1,'#b08a45');Rr(c-6,t,12,1,'#d9b56a');Rr(c-4,t-1,8,1,'#d9b56a');Rr(c-2,t-2,4,1,'#d9b56a');Rr(c-1,t-3,2,1,'#c49a50');
   for(let x=c-6;x<c+6;x+=3)P(x,t,'#c49a50');P(c-3,t-1,'#c49a50');P(c+1,t-1,'#c49a50')}
+ if(eq.head===140){const t=A.top,c=A.cx;Rr(c-7,t+1,14,1,'#c8a46a');Rr(c-4,t-1,8,2,'#b08850');Rr(c-4,t,8,1,'#5a3d24');Rr(c-3,t-2,6,1,'#b08850')}
+ if(eq.head===141){const t=A.top,c=A.cx;Rr(c-5,t-1,10,1,'#333');P(c-6,t,'#333');P(c+5,t,'#333');Rr(c-8,t+1,2,3,'#ff5e2c');Rr(c+6,t+1,2,3,'#ff5e2c');P(c-7,t+2,'#4b9bea');P(c+6,t+2,'#4b9bea')}
+ if(eq.body===142){const[a,b]=A.strap;if(back)Rr(Math.min(a[0],b[0])+2,a[1]+1,Math.max(3,Math.abs(b[0]-a[0])-3),6,'#c8a46a');else{Rr(a[0],a[1]+1,3,7,'#c8a46a');Rr(b[0]-3,a[1]+1,3,7,'#c8a46a');P(a[0]+1,a[1]+5,'#8a6a3a');P(b[0]-2,a[1]+5,'#8a6a3a')}}
  if(eq.head===111){const t=A.top,c=A.cx;const F=['#d94fa3','#ffd23f','#ffffff','#d8342c','#7b6fd6'];for(let x=c-6;x<=c+5;x++)P(x,t,(x-c)%2?'#4f9a45':F[(x+12)%5]);for(let x=c-5;x<=c+4;x+=3)P(x,t-1,F[(x+13)%5])}
  goutline(acc,'#1a1a26');for(let i=0;i<acc.p.length;i++)if(acc.p[i])g.p[i]=acc.p[i];
  return PSPR[k]=gcanvas(g)}
@@ -650,13 +676,25 @@ const PETS={
 };
 let animals=[],baits=[],pets=[],activePet=-1,petEnt=null,catchMG=null,aniT=4;
 function drawAnimal(type,f){
- if(type==='buffalo'){const g=grid(32,32);const D='#5b616b',L='#3a3f47';
-  for(const[x,o]of[[7,0],[10,1],[21,0],[24,1]]){const up=(o+f)%2;grect(g,x,23,2,7-up,L);grect(g,x,29-up,2,1,'#222')}
-  gell(g,16,19,11,6,D);gell(g,16,22,8,2.4,'#7a808a');gline(g,9,13,24,13,'#6e757f');
-  gell(g,5.5,17.5,4,3.6,D);gell(g,3,19.5,2.6,2,'#8a8f98');gs(g,2,19,'#222');gs(g,4,16,'#111');gs(g,5,16,'#9aa');
-  gline(g,4,14,7,11,'#e8e0c8');gline(g,7,11,11,11,'#e8e0c8');gs(g,11,12,'#e8e0c8');gline(g,7,15,10,13,'#d6ccb0');gs(g,11,13,'#d6ccb0');
-  gline(g,27,16,29,22,L);gs(g,29,23,'#222');gs(g,30,23,'#222');
-  goutline(g,'#1a1a26');return gcanvas(g)}
+ if(type==='buffalo'){const g=grid(36,32);const K='#26262b',K2='#3b3b42',H='#80858c',H2='#5d6168',GOLD='#ffd23f';const t=f?1:0;
+  // 尾巴（灰色尾毛往上翹）
+  gline(g,31,16,33,12,K);gline(g,33,12,33,9,K);gell(g,33.5,7.5,2.2,2,'#9a9ea4');gs(g,32,6,'#b8bcc2');
+  // 腿：粗短、四平八穩
+  for(const[x,y0,o]of[[24,22,0],[29,21,1],[7,21,1],[14,22,0]]){const up=(o+t)%2;grect(g,x,y0,3,7-up,K);grect(g,x,y0+6-up,3,1,'#55595f')}
+  // 身體：方方的黑色大身軀
+  grect(g,13,12,19,11,K);gell(g,30,17,3,5.5,K);gell(g,15,18,4,5,K);gline(g,15,12,30,12,K2);gline(g,14,13,14,20,K2);
+  // 頭（正面）
+  gell(g,11,14,6.5,5.6,K);grect(g,6,12,11,6,K);
+  // 大彎角
+  gline(g,6,10,2,9,H);gline(g,6,11,2,10,H);gline(g,2,9,1,6,H);gline(g,3,9,2,6,H);gs(g,1,5,H2);gs(g,2,5,H2);gs(g,1,4,H2);
+  gline(g,16,10,20,9,H);gline(g,16,11,20,10,H);gline(g,20,9,21,6,H);gline(g,21,10,22,6,H);gs(g,21,5,H2);gs(g,22,5,H2);gs(g,22,4,H2);
+  gline(g,6,10,16,10,K);gline(g,7,9,15,9,K);
+  // 半瞇的眼睛（厭世臉）
+  grect(g,7,13,3,1,'#ffffff');grect(g,13,13,3,1,'#ffffff');gs(g,9,13,'#000');gs(g,15,13,'#000');gline(g,7,12,9,12,'#000');gline(g,13,12,15,12,'#000');gs(g,6,12,K2);gs(g,16,12,K2);
+  // 鼻子與金色鼻環
+  grect(g,8,16,7,2,K2);gs(g,9,16,'#111');gs(g,13,16,'#111');
+  gs(g,9,18,GOLD);gs(g,9,19,GOLD);gs(g,10,20,GOLD);gs(g,11,20,GOLD);gs(g,12,20,GOLD);gs(g,13,19,GOLD);gs(g,13,18,GOLD);gs(g,10,20,'#c9a000');
+  goutline(g,'#0b0b10');return gcanvas(g)}
  const g=grid(24,32);
  if(type==='fiddler'){for(const[x,s]of[[8,-1],[10,-1],[14,1],[16,1]]){gs(g,x,28,'#c94a2a');gs(g,x+s,29+((x+f)%2?0:0),'#c94a2a')}
   gell(g,12,26,5,2.6,'#ff6a3a');gell(g,12,25,3.5,1.2,'#ff9a6c');gline(g,10,24,10,22,'#5a2a1a');gline(g,14,24,14,22,'#5a2a1a');gs(g,10,21,'#111');gs(g,14,21,'#111');
@@ -692,7 +730,7 @@ function updateAnimals(dt){
   a.full=Math.max(0,a.full-dt);
   let bait=null;if(a.eat<=0&&a.full<=0){let bd=6;for(const b of baits){const bdist=Math.hypot(b.x-a.x,b.y-a.y);if(bdist<bd&&Math.abs(b.z-a.z)<2){bd=bdist;bait=b}}}
   if(a.eat>0){a.eat-=dt;if(a.eat<=0){a.full=25;baits=baits.filter(b=>b!==a.eating);a.eating=null}}
-  const noticeR=a.eat>0?(p.sneak?0:1.1):(p.sneak?1.2:(p.moving?3.8:2.4));
+  const noticeR=(a.eat>0?(p.sneak?0:1.1):(p.sneak?1.2:(p.moving?3.8:2.4)))*(eq.head===140?.6:1);
   if(d<noticeR&&a.flee<=0&&p.hp>0){a.flee=1.8;a.eat=0;if(a.eating){a.eating=null}}
   let mx=0,my=0,sp=0;
   if(a.flee>0){a.flee-=dt;mx=dx/(d||1);my=dy/(d||1);sp=PETS[a.type].flee}
@@ -726,7 +764,7 @@ function resolveCatch(){const M=catchMG;if(!M||M.t<.15)return;const P=PETS[M.a.t
   if(M.round>=P.rounds){animals=animals.filter(x=>x!==M.a);pets.push({type:M.a.type});AU.play('catch');toast(`抓到了${P.n}！`);logMsg(`打開背包（E）的「寵物」可以帶${P.n}在身邊`);catchMG=null;if(activePet<0){activePet=pets.length-1}}
   else{M.zc=15+Math.random()*70;M.spd*=1.12;M.t=0}}
  else{M.a.flee=2.6;M.a.eat=0;M.a.full=10;AU.play('swing');logMsg(`${P.n}逃走了！再試一次吧`);catchMG=null}}
-function updateCatch(dt){const M=catchMG;if(!M)return;M.t+=dt;M.pos+=M.dir*M.spd*dt;if(M.pos>100){M.pos=100;M.dir=-1}if(M.pos<0){M.pos=0;M.dir=1}
+function updateCatch(dt){const M=catchMG;if(!M)return;M.t+=dt;M.pos+=M.dir*M.spd*dt*(eq.hand===145?.7:1);if(M.pos>100){M.pos=100;M.dir=-1}if(M.pos<0){M.pos=0;M.dir=1}
  if(M.t>5||Math.hypot(M.a.x-player.x,M.a.y-player.y)>4){M.a.flee=2;logMsg('太慢了，牠跑掉了');catchMG=null}}
 function drawCatchHUD(){const M=catchMG;if(!M)return;const P=PETS[M.a.type];const x0=Math.round(bw/2-50),y0=bh-52;
  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(x0-6,y0-14,112,26);
@@ -839,7 +877,7 @@ function killMonster(m,byPlayer){m.dead=true;AU.play('mondie');burst(m.x,m.y,m.z
  else if(m.type==='golem'){addItem(SALT,3);addItem(106,Math.random()<.5?2:1);if(Math.random()<.35)rareDrop(121)}}
 function rareDrop(id){addItem(id,1,true);toast(`✨ 稀有寶物！獲得「${nameOf(id)}」`);logMsg(`✨ ${nameOf(id)}：${ITEMS[id].desc}`);AU.play('rare');burst(player.x,player.y,player.z+1.2,'#ffd23f',26)}
 function updateMonsters(dt){
- const p=player;const cap=Math.min(14,5+G.day*2);
+ const p=player;const cap=Math.floor(Math.min(14,5+G.day*2)*(eq.hand===148?.7:1));
  if(G.night){G.spawnT=(G.spawnT||0)-dt;if(G.spawnT<=0&&monsters.length<cap){spawnMonster();G.spawnT=2+Math.random()*2}}
  for(const m of monsters){
   m.anim+=dt;m.flash=Math.max(0,m.flash-dt);m.atkCd-=dt;
@@ -882,7 +920,7 @@ function updatePlayer(dt){
  ix+=joy.x;iy+=joy.y;if(catchMG){ix=0;iy=0}p.sneak=!!(keys.ShiftLeft||keys.ShiftRight||sneakToggle);const mag=Math.min(1,Math.hypot(ix,iy));
  let wx=ix+iy,wy=-ix+iy;const m=Math.hypot(wx,wy);
  const inW=cellAt(p.x,p.y,p.z+.3)===WATER;
- const sp=riding?(inW?4.2:6.6)*(p.food<=0?.8:1):ch.speed*(inW?(ch.swim?1.6:.55):1)*(p.food<=0?.7:1)*(p.sneak?.45:1)*(eq.face===112&&!G.night?1.15:1);
+ const sp=riding?(inW?4.2:6.6)*(p.food<=0?.8:1):ch.speed*(inW?(ch.swim?1.6:.55):1)*(p.food<=0?.7:1)*(p.sneak?.45:1)*(eq.face===112&&!G.night?1.15:1)*(eq.hand===150&&G.night?1.1:1);
  p.moving=m>.05&&mag>.1;
  if(p.moving){wx/=m;wy/=m;p.fx=wx;p.fy=wy;p.anim+=dt*(inW?.6:1)}
  p.kx*=Math.pow(.01,dt);p.ky*=Math.pow(.01,dt);
@@ -898,24 +936,24 @@ function updatePlayer(dt){
  if(p.food<=0){p.starve+=dt;if(p.starve>6){p.starve=0;p.hp--;AU.play('hurt');logMsg('肚子好餓……快吃東西！');if(p.hp<=0)die()}}
  if(p.z<-5){p.z=SPAWN.z}
 }
-function reachOK(x,y,z){const p=player;return Math.hypot(x+.5-p.x,y+.5-p.y,z+.5-(p.z+1))<=(mouse.type==='mouse'?4.6:5.2)}
+function reachOK(x,y,z){const p=player;return Math.hypot(x+.5-p.x,y+.5-p.y,z+.5-(p.z+1))<=(mouse.type==='mouse'?4.6:5.2)+(eq.hand===144?1.5:0)}
 function entInCell(x,y,z){for(const e of [player,...monsters]){if(e.x+e.r>x&&e.x-e.r<x+1&&e.y+e.r>y&&e.y-e.r<y+1&&e.z+e.h>z&&e.z<z+1)return true}return false}
 function attack(target){const p=player;if(p.atkCd>0)return;p.atkCd=.42;p.swing=.2;AU.play('swing');
  let t=target;if(!t){let best=null,bd=2.4;for(const m of monsters){const dx=m.x-p.x,dy=m.y-p.y,d=Math.hypot(dx,dy);if(d<bd&&Math.abs(m.z-p.z)<1.6&&(d<1.2||(dx*p.fx+dy*p.fy)/d>.2)){bd=d;best=m}}t=best}
  if(!t)return;if(Math.hypot(t.x-p.x,t.y-p.y)>3)return;
- const h=held();const dmg=(h&&ITEMS[h]&&ITEMS[h].dmg?ITEMS[h].dmg:2)+(p.ch.dmg||0);hurtMonster(t,dmg,p.x,p.y)}
+ const h=held();let dmg=(h&&ITEMS[h]&&ITEMS[h].dmg?ITEMS[h].dmg:2)+(p.ch.dmg||0)+(eq.hand===146?2:0);if(h===151&&t.type==='ghost')dmg*=2;hurtMonster(t,dmg,p.x,p.y)}
 function eat(){const id=held();const it=ITEMS[id];if(!it||!it.food){logMsg('手上沒有食物喔');return false}const p=player;if(p.food>=20&&p.hp>=p.maxHp){logMsg('已經吃飽了');return true}
- removeItem(id);p.food=Math.min(20,p.food+it.food);p.hp=Math.min(p.maxHp,p.hp+(it.heal||0));AU.play('eat');if(id===138){p.buff=40;logMsg('暖呼呼的鹽滷豆花！40 秒內快速回血')}else logMsg(`吃了${it.n}，好好吃！`);return true}
+ removeItem(id);let fd=it.food,hl=it.heal||0;if(eq.body===142)fd=Math.round(fd*1.3);if(eq.hand===147)hl=Math.max(hl+1,Math.round(hl*1.5));p.food=Math.min(20,p.food+fd);p.hp=Math.min(p.maxHp,p.hp+hl);AU.play('eat');if(id===138){p.buff=40;logMsg('暖呼呼的鹽滷豆花！40 秒內快速回血')}else logMsg(`吃了${it.n}，好好吃！`);return true}
 function breakBlock(x,y,z){const id=raw(x,y,z);
  if(isCrop(id)){harvestCrop(x,y,z,id);return}
  if(isDoor(id)){const grp=doorGroup(x,y,z);for(const[a,b,c]of grp)setB(a,b,c,AIR);AU.play('break',900);burstBlock(x,y,z,24);addItem(26,Math.max(1,Math.round(grp.length/2)));return}
  setB(x,y,z,AIR);lights.delete(IX(x,y,z));AU.play('break',id===SALT?1400:id===STONE?500:isPlant(id)?2200:800);
  burstBlock(x,y,z,id);const drop=BL[id].drop||id;if(id!==BEDROCK){addItem(drop);if(eq.body===113&&!isPlant(id)&&Math.random()<.25)addItem(drop)}
- if(id===GRASS&&Math.random()<.12){const q=Math.random();addItem(q<.5?131:q<.8?132:133);if(!G.announced.seed){G.announced.seed=1;logMsg('撿到種子了！合成鋤頭（E），把草地翻成農田再種下')}}
+ if(id===GRASS&&Math.random()<(eq.hand===143?.35:.12)){const q=Math.random();addItem(q<.5?131:q<.8?132:133);if(!G.announced.seed){G.announced.seed=1;logMsg('撿到種子了！合成鋤頭（E），把草地翻成農田再種下')}}
  const up=raw(x,y,z+1);if(up===TORCH||isPlant(up)){setB(x,y,z+1,AIR);lights.delete(IX(x,y,z+1));addItem(up)}else if(isCrop(up))harvestCrop(x,y,z+1,up)}
 function fishing(x,y,z){const ch=player.ch;const pan=raw(x,y,z-1)===PAN;burst(x+.5,y+.5,z+1,'#9fd0ff',8);AU.play('splash');
- if(pan){if(Math.random()<(ch.swim?.95:.75)){addItem(SALT);if(petActive('stilt')&&Math.random()<.5)addItem(SALT);AU.play('catch');logMsg('曬出了亮晶晶的鹽！')}else logMsg('鹽還沒曬好……')}
- else{if(Math.random()<(ch.swim?.75:.4)+(petActive('mudskipper')?.25:0)){addItem(102);AU.play('catch');logMsg('釣到一尾虱目魚！')}else logMsg('魚跑掉了……')}}
+ if(pan){if(Math.random()<(ch.swim?.95:.75)+(eq.hand===149?.3:0)){addItem(SALT);if(petActive('stilt')&&Math.random()<.5)addItem(SALT);AU.play('catch');logMsg('曬出了亮晶晶的鹽！')}else logMsg('鹽還沒曬好……')}
+ else{if(Math.random()<(ch.swim?.75:.4)+(petActive('mudskipper')?.25:0)+(eq.hand===149?.3:0)){addItem(102);AU.play('catch');logMsg('釣到一尾虱目魚！')}else logMsg('魚跑掉了……')}}
 function placeTarget(h){const id=held();if(!h||h.mon||!placeable(id))return null;
  let x=h.x,y=h.y,z=h.z;
  if(h.id===TORCH||isPlant(h.id)||isDoor(h.id)||isCrop(h.id))return null;
@@ -1018,14 +1056,16 @@ function drawEnt(e){const s=scr(e.x,e.y,e.z);
  if(e.kind==='player'&&e.inv>0&&Math.floor(time*16)%2)return;
  const sdx=e.fx-e.fy,sdy=e.fx+e.fy;const isA=e.kind==='ani';const back=!isA&&sdy<-.15;const flip=isA?sdx>.1:sdx<-.1;
  let spr,ox=12,oy=31,fr=(e.moving||e.kind==='mon')?Math.floor(e.anim*7)%2:0;
- if(e.kind==='player'){spr=playerSpr(e.ch.id,back,riding?0:fr);ox=14;oy=37}else if(isA){spr=aniSpr(e.type,fr);if(e.type==='buffalo')ox=16}else{spr=monSpr(e.type,fr);if(e.type==='golem'){ox=21;oy=53}}
- let bob=e.kind==='player'&&e.moving&&fr&&!riding?-1:0;if(e.kind==='player'&&riding)bob=-12;if(e.kind==='player'&&e.sneak)bob+=1;
- const X=Math.round(s.x),Y=Math.round(s.y)+bob;
+ if(e.kind==='player'){spr=playerSpr(e.ch.id,back,riding?0:fr);ox=14;oy=37}else if(isA){spr=aniSpr(e.type,fr);if(e.type==='buffalo')ox=18}else{spr=monSpr(e.type,fr);if(e.type==='golem'){ox=21;oy=53}}
+ let bob=e.kind==='player'&&e.moving&&fr&&!riding?-1:0;if(e.kind==='player'&&riding)bob=-13;if(e.kind==='player'&&e.sneak)bob+=1;
+ const X=Math.round(s.x)+(e.kind==='player'&&riding?(sdx>.1?-5:5):0),Y=Math.round(s.y)+bob;
  ctx.save();if(e.kind==='mon'&&e.type==='ghost')ctx.globalAlpha=.85;
  if(flip){ctx.translate(X,0);ctx.scale(-1,1);ctx.drawImage(spr,-ox,Y-oy)}else ctx.drawImage(spr,X-ox,Y-oy);
  ctx.restore();
  if(e.kind==='mon'&&e.flash>0){ctx.fillStyle='rgba(255,255,255,.6)';if(e.type==='golem')ctx.fillRect(X-17,Y-48,34,42);else ctx.fillRect(X-8,Y-20,16,18)}
  if(e.kind==='player'&&eq.face===112&&!back){const ph=(time*0.4)%1;if(ph<.18){const A=ANCH[e.ch.id];const lw=A.gw+1;const span=(A.gl[1][0]+lw)-(A.gl[0][0]-1);const k=Math.floor(ph/.18*span);const sx0=A.gl[0][0]-1+k+2,sy0=A.gl[0][1]+6;const px=flip?27-sx0:sx0;ctx.fillStyle='#ffffff';ctx.fillRect(X-14+px,Y-37+sy0,1,2);ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(X-14+px+(flip?-1:1),Y-37+sy0-2,1,1)}}
+ if(e.kind==='player'&&eq.hand&&ICON[eq.hand])ctx.drawImage(ICON[eq.hand],0,0,16,16,X+(flip?6:-15),Y-16,9,9);
+ if(e.kind==='player'&&eq.hand===149&&(time%9)<2.4&&!back){const A=ANCH[e.ch.id];const hx0=A.cx+2,hy=Y-37+A.top+6-3;const fx=v=>X-14+(flip?27-(hx0+v):hx0+v);ctx.fillStyle='#ff5e2c';for(let i=-2;i<=2;i++)ctx.fillRect(fx(i),hy,1,2);ctx.fillStyle='#d8342c';ctx.fillRect(fx(3),hy-1,1,1);ctx.fillRect(fx(3),hy+2,1,1);ctx.fillStyle='#fff';ctx.fillRect(fx(-2),hy,1,1)}
  if(e.kind==='player'){const h=held();if(h&&ICON[h]){const swg=e.swing>0?-3:0;ctx.drawImage(ICON[h],0,0,16,16,X+(flip?-16:6),Y-18+swg,10,10)}}
  if(e.kind==='mon'&&e.hp<e.maxHp){const hy=e.type==='golem'?Y-57:Y-33;ctx.fillStyle='#000';ctx.fillRect(X-7,hy,14,3);ctx.fillStyle='#ff5e2c';ctx.fillRect(X-6,hy+1,Math.max(0,12*e.hp/e.maxHp)|0,1)}
  if(false){ctx.fillStyle='#ff5e2c';ctx.fillRect(X-6,Y-32,Math.max(0,12*e.hp/e.maxHp)|0,1)}
@@ -1035,6 +1075,8 @@ function drawEnt(e){const s=scr(e.x,e.y,e.z);
   if(!e.pet&&e.flee>0){ctx.fillStyle='#fff100';ctx.fillRect(X,top-5,1,3);ctx.fillRect(X,top-1,1,1)}
   if(hover&&hover.ani===e){ctx.strokeStyle=held()===116?'#7dff7a':'rgba(255,255,255,.8)';ctx.strokeRect(X-8.5,top-3.5,17,Y-top+5)}}
 }
+function playerOccluded(){const p=player,px=Math.floor(p.x),py=Math.floor(p.y),pz=Math.floor(p.z+.01);
+ for(let i=0;i<=3;i++)for(let j=0;j<=3;j++){if(i+j===0)continue;for(let k=0;k<=i+j+1;k++){const id=raw(px+i,py+j,pz+k);if(id&&id!==WATER&&!isPlant(id)&&!isCrop(id)&&id!==TORCH&&id!==27)return true}}return false}
 function drawWorld(){
  const cx=cam.x,cy=cam.y;picks.length=0;
  const buckets=new Map();const ents=[player,...monsters,...animals,...baits];if(petEnt)ents.push(petEnt);
@@ -1060,7 +1102,10 @@ function drawWorld(){
  // particles
  for(const p of particles){const s=scr(p.x,p.y,p.z);ctx.fillStyle=p.c;ctx.fillRect(Math.round(s.x),Math.round(s.y),p.life>.3?2:1,p.life>.3?2:1)}
  // 被遮住時顯示角色剪影
- {const s=scr(player.x,player.y,player.z);const sdx=player.fx-player.fy,sdy=player.fx+player.fy;const spr=playerSpr(player.ch.id,sdy<-.15,0);const X=Math.round(s.x),Y=Math.round(s.y);ctx.save();ctx.globalAlpha=.32;if(sdx<-.1){ctx.translate(X,0);ctx.scale(-1,1);ctx.drawImage(spr,-14,Y-37)}else ctx.drawImage(spr,X-14,Y-37);ctx.restore()}
+ if(playerOccluded()&&!(player.inv>0&&Math.floor(time*16)%2)){const e=player;const s=scr(e.x,e.y,e.z);const sdx=e.fx-e.fy,sdy=e.fx+e.fy;
+  const fr=e.moving&&!riding?Math.floor(e.anim*7)%2:0;let bob=e.moving&&fr&&!riding?-1:0;if(e.sneak)bob+=1;if(riding)bob=-13;
+  const spr=playerSpr(e.ch.id,sdy<-.15,fr);const X=Math.round(s.x)+(riding?(sdx>.1?-5:5):0),Y=Math.round(s.y)+bob;
+  ctx.save();ctx.globalAlpha=.38;if(sdx<-.1){ctx.translate(X,0);ctx.scale(-1,1);ctx.drawImage(spr,-14,Y-37)}else ctx.drawImage(spr,X-14,Y-37);ctx.restore()}
  // hover outline / 放置預覽
  if(hover&&!hover.mon&&!hover.ani&&state==='play'){const p=hover;const T=placeTarget(p);const ok=reachOK(p.x,p.y,p.z);
   const hexPath=(sx,sy,water)=>{const o=(a,b)=>[sx+a+.5,sy+b+.5];const pts=water?[[16,0],[31,8],[16,15],[0,8]]:[[16,0],[31,8],[31,23],[16,31],[0,23],[0,8]];ctx.beginPath();pts.forEach((q,i)=>{const[a,b]=o(q[0],q[1]);i?ctx.lineTo(a,b):ctx.moveTo(a,b)});ctx.closePath();if(!water){ctx.moveTo(...o(0,8));ctx.lineTo(...o(16,16));ctx.lineTo(...o(31,8));ctx.moveTo(...o(16,16));ctx.lineTo(...o(16,31))}};
@@ -1111,6 +1156,12 @@ function drawHUD(){const p=player;
  if(mouse.in&&mouse.type==='mouse'&&mouse.y>=y0&&mouse.y<y0+sw&&mouse.x>=x0&&mouse.x<x0+n*sw){const i=Math.floor((mouse.x-x0)/sw),id=hotbar[i];const t=id&&inv[id]?nameOf(id)+(inv[id]>1?' ×'+inv[id]:''):'空格';
   ctx.font='8px sans-serif';const tw=ctx.measureText(t).width;const lx=Math.round(Math.min(bw-tw-6,Math.max(4,x0+i*sw+sw/2-tw/2)));ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(lx-3,y0-14,Math.ceil(tw)+6,12);ctx.fillStyle='#fff';ctx.fillText(t,lx,y0-5)}
  if(shake>0){}
+ if(eq.head===141){for(const m of monsters){const d=Math.hypot(m.x-p.x,m.y-p.y);if(d>16)continue;const s=scr(m.x,m.y,m.z+.5);if(s.x>10&&s.x<bw-10&&s.y>32&&s.y<bh-32)continue;
+  const cx=bw/2,cy=bh/2,dx=s.x-cx,dy=s.y-cy;const k=Math.min((bw/2-14)/Math.max(1e-3,Math.abs(dx)),(bh/2-36)/Math.max(1e-3,Math.abs(dy)));
+  ctx.save();ctx.translate(cx+dx*k,cy+dy*k);ctx.rotate(Math.atan2(dy,dx));ctx.globalAlpha=.65+.35*Math.sin(time*8);ctx.fillStyle=m.type==='golem'?'#3ff0ff':'#ff3355';ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-4,-5);ctx.lineTo(-4,5);ctx.closePath();ctx.fill();ctx.restore()}}
+ if(eq.hand===150){const cx=16,cy=40,dx=SPAWN.x-p.x,dy=SPAWN.y-p.y,d=Math.hypot(dx,dy);ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.arc(cx,cy,10,0,7);ctx.fill();ctx.strokeStyle='#d9b56a';ctx.lineWidth=1;ctx.stroke();
+  if(d>2){let vx=dx-dy,vy=(dx+dy)*.5;const l=Math.hypot(vx,vy);vx/=l;vy/=l;ctx.strokeStyle='#ff5e2c';ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+vx*8,cy+vy*8);ctx.stroke();ctx.strokeStyle='#4b9bea';ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx-vx*5,cy-vy*5);ctx.stroke()}
+  ctx.font='7px sans-serif';ctx.fillStyle='#fff';ctx.fillText(d>2?'教堂 '+Math.round(d)+'格':'在教堂',cx+13,cy+3)}
  if(p.hurtT>0){ctx.fillStyle=`rgba(255,40,40,${p.hurtT*.6})`;ctx.fillRect(0,0,bw,bh)}
 }
 function render(){
@@ -1138,23 +1189,50 @@ let panelOpen=false;
 function logMsg(t){const L=$('#log');const d=document.createElement('div');d.textContent=t;L.appendChild(d);while(L.children.length>5)L.removeChild(L.firstChild);setTimeout(()=>d.style.opacity=0,3500);setTimeout(()=>d.remove(),4600)}
 let toastT;function toast(t){const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>e.style.opacity=0,3500)}
 let nameT;function showName(){const id=held();const e=$('#itemName');e.textContent=id?nameOf(id)+(ITEMS[id]&&ITEMS[id].food?'（右鍵/F 吃）':''):'空手';e.style.opacity=1;clearTimeout(nameT);nameT=setTimeout(()=>e.style.opacity=0,1600)}
-const RECIPES=[{out:130,n:1,need:{9:2,4:1}},{out:138,n:1,need:{134:3,5:1}},{out:137,n:2,need:{135:2,9:1}},{out:116,n:1,need:{9:2,7:3}},{out:117,n:3,need:{102:1}},{out:110,n:1,need:{7:3,9:2}},{out:111,n:1,need:{21:2,19:2,20:1}},{out:112,n:1,need:{106:1,4:2}},{out:113,n:1,need:{17:4,6:1}},{out:24,n:2,need:{3:2,10:1}},{out:25,n:2,need:{4:1,5:1}},{out:26,n:1,need:{9:2,24:1}},{out:PLANK,n:4,need:{6:1}},{out:PLANK,n:3,need:{15:1}},{out:TORCH,n:4,need:{9:1}},{out:100,n:1,need:{9:3}},{out:101,n:1,need:{4:3,9:1}},{out:103,n:1,need:{102:1,5:1}},{out:105,n:1,need:{104:1,5:1}},{out:LAMP,n:1,need:{5:2,10:1}},{out:SALT,n:1,need:{106:2}},{out:108,n:1,need:{106:3,5:2}},{out:OYSTER,n:2,need:{3:2}}];
+const RECIPES=[
+ {t:1,out:PLANK,n:4,need:{6:1}},{t:1,out:PLANK,n:3,need:{15:1}},{t:1,out:TORCH,n:4,need:{9:1}},{t:1,out:100,n:1,need:{9:3}},{t:1,out:116,n:1,need:{9:2,7:3}},{t:1,out:130,n:1,need:{9:2,4:1}},{t:1,out:110,n:1,need:{7:3,9:2}},
+ {t:2,out:101,n:1,need:{4:3,9:1}},{t:2,out:25,n:2,need:{4:1,5:1}},{t:2,out:24,n:2,need:{3:2,10:1}},{t:2,out:OYSTER,n:2,need:{3:2}},{t:2,out:117,n:3,need:{102:1}},{t:2,out:103,n:1,need:{102:1,5:1}},{t:2,out:113,n:1,need:{17:4,6:1}},{t:2,out:111,n:1,need:{21:2,19:2,20:1}},{t:2,out:LAMP,n:1,need:{5:2,10:1}},{t:2,out:26,n:1,need:{9:2,24:1}},
+ {t:2,out:140,n:1,need:{16:4,9:1}},{t:2,out:142,n:1,need:{17:3,16:2,9:1}},{t:2,out:143,n:1,need:{24:1,9:1}},{t:2,out:144,n:1,need:{24:2,4:1}},{t:2,out:145,n:1,need:{9:3,20:1}},{t:2,out:147,n:1,need:{4:3,20:1,23:1}},
+ {t:3,out:137,n:2,need:{135:2,9:1}},{t:3,out:138,n:1,need:{134:3,5:1}},
+ {t:4,out:105,n:1,need:{104:1,5:1}},{t:4,out:SALT,n:1,need:{106:2}},{t:4,out:112,n:1,need:{106:1,4:2}},{t:4,out:108,n:1,need:{106:3,5:2}},{t:4,out:141,n:1,need:{106:1,9:2,12:1}},{t:4,out:150,n:1,need:{106:1,24:1,9:1}},{t:4,out:149,n:1,need:{25:1,106:1,21:1}},{t:4,out:146,n:1,need:{106:2,9:2,21:1}},{t:4,out:148,n:1,need:{106:2,9:1,7:2}},{t:4,out:151,n:1,need:{106:3,25:2,9:1}}];
+const TIER={1:'① 基礎：木頭就能做',2:'② 採集進階：石頭、鹽、沙、花、魚',3:'③ 農田料理：要先種田',4:'④ 夜晚素材：要打怪物'};
 function canCraft(r){for(const k in r.need)if((inv[k]||0)<r.need[k])return false;return true}
 function renderPanel(){
  const g=$('#invGrid');g.innerHTML='';const ids=Object.keys(inv).map(Number).sort((a,b)=>a-b);
  if(!ids.length)g.innerHTML='<p class="hint">還沒有東西，去挖點方塊吧！</p>';
- for(const id of ids){const d=document.createElement('div');d.className='slot'+(hotbar.includes(id)?' hb':'');d.title=nameOf(id)+(ITEMS[id]&&ITEMS[id].desc?'：'+ITEMS[id].desc:'');d.innerHTML=`<img src="${ICONURL[id]}"><span>${inv[id]}</span>`;
+ for(const id of ids){const d=document.createElement('div');d.className='slot'+(hotbar.includes(id)?' hb':'');d.title=nameOf(id)+(ITEMS[id]&&ITEMS[id].desc?'：'+ITEMS[id].desc:'');d.innerHTML=`<img src="${ICONURL[id]}"><span>${inv[id]}</span>`;d.dataset.id=id;
   const it=ITEMS[id];if(it&&it.slot&&eq[it.slot]===id)d.className='slot hb';
   bindTip(d,()=>itemTip(id));d.removeAttribute('title');
-  d.onclick=()=>{if(it&&it.slot){eq[it.slot]=eq[it.slot]===id?0:id;applyEq();AU.play('select');renderPanel();return}hotbar=hotbar.map(h=>h===id?0:h);hotbar[sel]=id;AU.play('select');renderPanel();showName()};g.appendChild(d)}
+  d.onclick=()=>{if(justDragged){justDragged=false;return}if(it&&it.slot){eq[it.slot]=eq[it.slot]===id?0:id;applyEq();AU.play('select');renderPanel();return}hotbar=hotbar.map(h=>h===id?0:h);hotbar[sel]=id;AU.play('select');renderPanel();showName()};g.appendChild(d)}
+ renderHotbarPanel();
+ for(const d of g.children){const id=+d.dataset.id;if(!id)continue;dragSource(d,{item:id})}
  renderEqPets();
  const R=$('#recipes');R.innerHTML='';
- for(const r of RECIPES){const ok=canCraft(r);const d=document.createElement('div');d.className='rec';
+ let lastT=0;for(const r of RECIPES){if(r.t!==lastT){lastT=r.t;const h=document.createElement('div');h.className='tierh';h.textContent=TIER[r.t];R.appendChild(h)}const ok=canCraft(r);const d=document.createElement('div');d.className='rec';
   const need=Object.entries(r.need).map(([k,v])=>`${nameOf(+k)}×${v}（有${inv[k]||0}）`).join('、');
-  d.innerHTML=`<img src="${ICONURL[r.out]}"><div class="nm">${nameOf(r.out)} ×${r.n}<small>${need}${ITEMS[r.out]&&ITEMS[r.out].desc?'<br>'+ITEMS[r.out].desc:''}${ITEMS[r.out]&&ITEMS[r.out].dmg?'<br>攻擊力 '+ITEMS[r.out].dmg:''}${ITEMS[r.out]&&ITEMS[r.out].food?'<br>飽足 +'+ITEMS[r.out].food+(ITEMS[r.out].heal?'、回血 +'+ITEMS[r.out].heal:''):''}</small></div><button ${ok?'':'disabled'}>合成</button>`;
+  d.innerHTML=`<img src="${ICONURL[r.out]}" draggable="false"><div class="nm">${nameOf(r.out)} ×${r.n}<small>${need}${ITEMS[r.out]&&ITEMS[r.out].desc?'<br>'+ITEMS[r.out].desc:''}${ITEMS[r.out]&&ITEMS[r.out].dmg?'<br>攻擊力 '+ITEMS[r.out].dmg:''}${ITEMS[r.out]&&ITEMS[r.out].food?'<br>飽足 +'+ITEMS[r.out].food+(ITEMS[r.out].heal?'、回血 +'+ITEMS[r.out].heal:''):''}</small></div><button ${ok?'':'disabled'}>合成</button>`;
   bindTip(d.querySelector('img'),()=>itemTip(r.out));
   d.querySelector('button').onclick=()=>{if(!canCraft(r))return;for(const k in r.need)removeItem(+k,r.need[k]);addItem(r.out,r.n,true);AU.play('craft');logMsg(`合成了 ${nameOf(r.out)} ×${r.n}`);renderPanel()};R.appendChild(d)}
 }
+let drag=null,justDragged=false;
+function renderHotbarPanel(){const H=$('#hbGrid');H.innerHTML='';
+ for(let i=0;i<9;i++){const id=hotbar[i]&&inv[hotbar[i]]?hotbar[i]:0;const d=document.createElement('div');d.className='slot hbs'+(i===sel?' sel':'');d.dataset.hb=i;
+  d.innerHTML=`<b>${i+1}</b>`+(id?`<img src="${ICONURL[id]}"><span>${inv[id]}</span>`:'');
+  if(id){bindTip(d,()=>itemTip(id));dragSource(d,{hb:i,item:id})}
+  d.onclick=()=>{if(justDragged){justDragged=false;return}sel=i;AU.play('select');showName();renderPanel()};H.appendChild(d)}}
+function dragSource(el,src){el.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;e.preventDefault();drag={src,x:e.clientX,y:e.clientY,on:false,pid:e.pointerId}})}
+function hbAt(x,y){const el=document.elementFromPoint(x,y);const s=el&&el.closest?el.closest('.hbs'):null;return s?+s.dataset.hb:-1}
+addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.pid)return;
+ if(!drag.on&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>6){drag.on=true;hideTip();const gh=$('#dragGhost');gh.src=ICONURL[drag.src.item];gh.style.display='block'}
+ if(drag.on){const gh=$('#dragGhost');gh.style.left=(e.clientX-20)+'px';gh.style.top=(e.clientY-20)+'px';const t=hbAt(e.clientX,e.clientY);document.querySelectorAll('.hbs').forEach(s=>s.classList.toggle('dropok',+s.dataset.hb===t))}});
+addEventListener('pointerup',e=>{if(!drag||e.pointerId!==drag.pid)return;const d=drag;drag=null;$('#dragGhost').style.display='none';if(!d.on)return;justDragged=true;setTimeout(()=>justDragged=false,50);
+ const t=hbAt(e.clientX,e.clientY);const id=d.src.item;const it=ITEMS[id];
+ if(t>=0){if(it&&it.slot){logMsg('配件請在背包點一下穿上，不用放快捷欄');renderPanel();return}
+  if(d.src.hb!==undefined){const tmp=hotbar[t];hotbar[t]=hotbar[d.src.hb];hotbar[d.src.hb]=tmp}else{hotbar=hotbar.map(h=>h===id?0:h);hotbar[t]=id}
+  AU.play('select')}
+ else if(d.src.hb!==undefined){hotbar[d.src.hb]=0;AU.play('swing')}
+ renderPanel();showName()});
+addEventListener('pointercancel',()=>{drag=null;$('#dragGhost').style.display='none'});
 function itemTip(id){const it=ITEMS[id]||{};let h=`<b>${nameOf(id)}</b>${inv[id]?' ×'+inv[id]:''}`;const L=[];
  if(it.desc)L.push(it.desc);if(it.dmg)L.push('攻擊力 '+it.dmg);if(it.food)L.push(`飽足 +${it.food}`+(it.heal?`、回血 +${it.heal}`:'')+'（右鍵或 F 吃）');
  if(id<100&&!it.desc){L.push(isPlant(id)?'可以種在方塊上':id===TORCH?'插在方塊上，火光範圍內不會冒出怪物':id===LAMP?'更大的光，範圍內不會冒出怪物':id===26?'兩格高，右鍵開關':'方塊：右鍵放置')}
@@ -1166,11 +1244,11 @@ function bindTip(el,fn){el.addEventListener('pointerenter',e=>showTip(fn(),e.cli
  el.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){showTip(fn(),e.clientX,e.clientY);clearTimeout(tipT);tipT=setTimeout(hideTip,1800)}})}
 function applyEq(){if(!player)return;player.maxHp=player.ch.hp+(eq.head===121?6:0);player.hp=Math.min(player.hp,player.maxHp)}
 function renderEqPets(){const E=$('#eqGrid');E.innerHTML='';
- for(const [slot,lab] of [['head','頭'],['face','臉'],['body','身上']]){const id=eq[slot];const d=document.createElement('div');d.className='slot'+(id?' hb':'');d.title=id?nameOf(id)+'（點一下脫下）':lab;
+ for(const [slot,lab] of [['head','頭'],['face','臉'],['body','身上'],['hand','手持']]){const id=eq[slot];const d=document.createElement('div');d.className='slot'+(id?' hb':'');d.title=id?nameOf(id)+'（點一下脫下）':lab;
   d.innerHTML=id?`<img src="${ICONURL[id]}"><span>${lab}</span>`:`<span style="left:0;right:0;top:15px;text-align:center;color:#7f93b5">${lab}</span>`;if(id){d.onclick=()=>{eq[slot]=0;applyEq();AU.play('select');hideTip();renderPanel()};bindTip(d,()=>itemTip(id));d.removeAttribute('title')}E.appendChild(d)}
  const PL=$('#petList');PL.innerHTML='';
  if(!pets.length)PL.innerHTML='<p class="hint">還沒有寵物。合成「捕捉網」，白天去找動物：按住 Shift（手機按「躡」）慢慢靠近，或先放「魚餌」讓牠分心，再點牠並抓準時機按下！</p>';
- pets.forEach((pt,i)=>{const P=PETS[pt.type];const d=document.createElement('div');d.className='rec';d.innerHTML=`<img src="${aniSpr(pt.type,0).toDataURL()}" style="width:${pt.type==='buffalo'?32:24}px;height:32px"><div class="nm">${P.n}<small>${P.perk}</small></div><button>${activePet===i?'休息':'帶在身邊'}</button>`;
+ pets.forEach((pt,i)=>{const P=PETS[pt.type];const d=document.createElement('div');d.className='rec';d.innerHTML=`<img src="${aniSpr(pt.type,0).toDataURL()}" style="width:${pt.type==='buffalo'?36:24}px;height:32px"><div class="nm">${P.n}<small>${P.perk}</small></div><button>${activePet===i?'休息':'帶在身邊'}</button>`;
   d.querySelector('button').onclick=()=>{activePet=activePet===i?-1:i;AU.play('select');renderPanel()};PL.appendChild(d)});
  const tre=document.createElement('p');tre.className='hint';tre.innerHTML='稀有寶物：'+[[119,'夜潮蟹 5%'],[120,'霧魂 3%'],[121,'鹽堆巨人 35%']].map(([id,m])=>`${inv[id]?'✅':'❔'} <b>${inv[id]?nameOf(id):'？？？'}</b>（${m}）`).join('、');PL.appendChild(tre);
  const info=document.createElement('p');info.className='hint';info.innerHTML='可以抓的動物：'+Object.values(PETS).map(P=>`<b>${P.n}</b>（${P.where}，難度${'★'.repeat(P.rounds)}）`).join('、');PL.appendChild(info)}
@@ -1308,7 +1386,7 @@ function beginPlay(){riding=false;if(player)player.h=1.5;monsters=[];particles=[
  G.dark=darkAt((G.t*24+6)%24);G.night=G.dark>.5;G.hour=(G.t*24+6)%24;
  ['#start','#pause','#dead','#panel'].forEach(s=>$(s).classList.remove('show'));
  state='play';autosaveT=0;updateClock();if(AU.ctx&&AU.choice==='auto'&&TRACKS[AU.cur].mood!==AU.moodNow())AU.pickTrack()}
-function startNew(){AU.init();curSlot=pendingSlot;genWorld(20260814);player=newPlayer();inv={};eq={head:0,face:0,body:0};pets=[];activePet=-1;hotbar=[0,0,0,0,0,0,0,0,0];sel=0;playTime=0;
+function startNew(){AU.init();curSlot=pendingSlot;genWorld(20260814);player=newPlayer();inv={};eq={head:0,face:0,body:0,hand:0};pets=[];activePet=-1;hotbar=[0,0,0,0,0,0,0,0,0];sel=0;playTime=0;
  Object.assign(G,{t:1/24,day:1,started:false});addItem(TORCH,3,true);addItem(103,2,true);addItem(131,4,true);beginPlay();
  toast(`歡迎來到雲嘉南濱海！${player.ch.name}出發了`);saveGame(false);
  setTimeout(()=>logMsg('按住左鍵挖方塊：先砍木麻黃取得原木'),1200);setTimeout(()=>logMsg('按 E 打開合成台：原木→木板→火把、木劍'),5000);setTimeout(()=>logMsg('點鹽田的水可以曬鹽，點魚塭可以釣虱目魚'),9000);setTimeout(()=>logMsg('按 Esc 開選單：存檔、換音樂、回首頁'),13000)}
@@ -1316,7 +1394,7 @@ function loadSlot(i){const d=slotCache[i];if(!d)return;AU.init();curSlot=i;selCh
  try{world.set(rleDecode(d.world,W*D*H))}catch(e){toast('存檔資料損壞，無法讀取');return}
  rebuildLights();rebuildCrops();player=newPlayer();Object.assign(player,{x:d.p.x,y:d.p.y,z:d.p.z,hp:Math.max(1,d.p.hp),food:d.p.food});
  inv={};for(const k in d.inv)if(d.inv[k]>0)inv[+k]=d.inv[k];hotbar=(d.hotbar||[]).map(Number).concat([0,0,0,0,0,0,0,0,0]).slice(0,9);sel=d.sel||0;
- eq=Object.assign({head:0,face:0,body:0},d.eq||{});pets=(d.pets||[]).filter(q=>PETS[q.type]);activePet=typeof d.activePet==='number'&&d.activePet<pets.length?d.activePet:-1;applyEq();player.hp=Math.max(1,Math.min(d.p.hp,player.maxHp));
+ eq=Object.assign({head:0,face:0,body:0,hand:0},d.eq||{});pets=(d.pets||[]).filter(q=>PETS[q.type]);activePet=typeof d.activePet==='number'&&d.activePet<pets.length?d.activePet:-1;applyEq();player.hp=Math.max(1,Math.min(d.p.hp,player.maxHp));
  Object.assign(G,{t:d.t,day:d.day,started:true});playTime=d.playTime||0;beginPlay();toast(`讀取存檔 ${i+1}・第 ${G.day} 天`);AU.play('save')}
 async function goHome(){if(state==='play'||state==='dead'){$('#saveMsg').textContent='存檔中……';await saveGame(false)}
  state='menu';paused=false;panelOpen=false;mouse.left=false;['#pause','#dead','#panel'].forEach(s=>$(s).classList.remove('show'));
@@ -1338,7 +1416,7 @@ $('#bMenu').onclick=()=>togglePause();$('#bResume').onclick=()=>togglePause(fals
 resize();buildBlockSprites();buildIcons();buildClouds();$('#bSnd').textContent=AU.musicOn?'🔊 音樂':'🔇 音樂';buildChars();renderStoreInfo();renderMusicLists();showMenuView('main');requestAnimationFrame(frame);
 refreshSlots();Store.init().then(()=>{if(Store.cloud)refreshSlots()});
 
-window.__dbg={toggleRide,get riding(){return riding},get petEnt(){return petEnt},set activePet(v){activePet=v},useHoe,plantSeed,updateCrops,eat,breakBlock,get crops(){return crops},spawnMonster,killMonster,rareDrop,mouse,get hover(){return hover},set hover(v){hover=v},get mining(){return mining},get catchMG(){return catchMG},startCatch,resolveCatch,spawnAnimal,get animals(){return animals},get pets(){return pets},get eq(){return eq},toggleDoor,addItem,get sel(){return sel},set sel(v){sel=v},spawnFlock,get birds(){return birds},scr,get scale(){return scale},raw,topZ,get invv(){return inv},G,get player(){return player},get monsters(){return monsters},startNew,loadSlot,goHome,saveGame,Store,AU,slotCache,setHour:h=>{G.t=((h-6+24)%24)/24},inv};
+window.__dbg={get hotbar(){return hotbar},toggleRide,get riding(){return riding},get petEnt(){return petEnt},set activePet(v){activePet=v},useHoe,plantSeed,updateCrops,eat,breakBlock,get crops(){return crops},spawnMonster,killMonster,rareDrop,mouse,get hover(){return hover},set hover(v){hover=v},get mining(){return mining},get catchMG(){return catchMG},startCatch,resolveCatch,spawnAnimal,get animals(){return animals},get pets(){return pets},get eq(){return eq},toggleDoor,addItem,get sel(){return sel},set sel(v){sel=v},spawnFlock,get birds(){return birds},scr,get scale(){return scale},raw,topZ,get invv(){return inv},G,get player(){return player},get monsters(){return monsters},startNew,loadSlot,goHome,saveGame,Store,AU,slotCache,setHour:h=>{G.t=((h-6+24)%24)/24},inv};
 </script>
 </body>
 </html>
