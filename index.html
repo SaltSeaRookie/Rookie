@@ -112,6 +112,7 @@ body.touch #log{bottom:150px}
 <div class="ov show" id="start"><div class="box">
   <h1><span class="a">鹽</span><span class="b">海</span><span class="c">新</span>鮮人：鹽田求生記</h1>
   <p class="sub">雲嘉南濱海國家風景區 ・ 2.5D 像素沙盒生存遊戲 —— 選一位夥伴，在鹽田、魚塭與海岸活過一夜又一夜！</p>
+  <div id="updBar" style="display:none;background:#ffd23f;color:#1a1a2e;border:3px solid #000;padding:8px 12px;margin:0 0 12px;font-weight:700;align-items:center;gap:10px;flex-wrap:wrap"><span id="updTxt"></span><button class="btn" id="bUpd" style="font-size:15px;padding:6px 12px">🔄 重新整理（自動存檔）</button></div>
   <div id="menuMain">
     <button class="btn" id="bContinue" style="display:none;margin-bottom:12px">▶ 繼續冒險</button>
     <div class="mcols">
@@ -130,6 +131,7 @@ body.touch #log{bottom:150px}
       <div>💾 每 2 分鐘、每天清晨與回首頁時自動存檔</div>
       <div>📱 手機請橫放：左搖桿移動，「挖/放」切換點擊功能</div>
     </div>
+    <p class="hint" style="text-align:right;margin-top:8px">版本 <b class="verTxt"></b></p>
   </div>
   <div id="menuChars" style="display:none">
     <h3 id="charsTitle">選擇你的夥伴</h3>
@@ -149,6 +151,8 @@ body.touch #log{bottom:150px}
       <button class="btn sec" id="bSave">💾 立即存檔</button>
       <button class="btn sec" id="bHome">🏠 存檔並回到首頁</button>
       <p class="hint" id="saveMsg"></p>
+      <p class="hint">版本 <b class="verTxt"></b></p>
+      <button class="btn sec" id="bUpd2" style="display:none;font-size:15px">✨ 有新版本：存檔並重新整理</button>
     </div>
     <div><h3>音樂（Lo-fi）</h3><div class="musicList"></div></div>
   </div>
@@ -1592,8 +1596,23 @@ const Store={cloud:null,status:'local',localOK:true,
  async del(i){try{localStorage.removeItem(this.key(i))}catch(e){}if(this.cloud){try{await withTimeout(this.cloud.doc('slot'+i).delete(),9000)}catch(e){}}}
 };
 let curSlot=-1,playTime=0,autosaveT=0,saving=false;const slotCache=[null,null,null];
-function serialize(){return {v:2,ss:4,map:L.id,seed:20260814,savedAt:Date.now(),char:selChar,day:G.day,t:G.t,world:rleEncode(world),
+function serialize(){return {v:2,ss:4,ver:GAME_VER,map:L.id,seed:20260814,savedAt:Date.now(),char:selChar,day:G.day,t:G.t,world:rleEncode(world),
  p:{x:+player.x.toFixed(3),y:+player.y.toFixed(3),z:+player.z.toFixed(3),hp:player.hp,food:player.food},inv:{...inv},hotbar:hotbar.slice(),sel,playTime:Math.round(playTime),eq:{...eq},pets:pets.map(p=>({type:p.type})),activePet,sapProg:Object.fromEntries([...sapProg].map(([k,v])=>[k,Math.round(v)])),placed:[...placed].slice(0,30000),npcs:npcs.map(n=>({hab:n.hab,id:n.id,home:n.home,giftDay:n.giftDay,x:+n.x.toFixed(2),y:+n.y.toFixed(2),z:n.z})),cropProg:Object.fromEntries([...cropProg].map(([k,v])=>[k,Math.round(v)]))}}
+
+/* ================= 版本檢查 ================= */
+const GAME_VER='1.35.0';// 每次更新遊戲都要調高
+const verNum=v=>String(v).split('.').map(n=>parseInt(n)||0).reduce((a,n)=>a*1000+n,0);
+let newVer=null;
+async function checkUpdate(){try{const r=await fetch(location.href.split('#')[0].replace(/[?&]vc=\d+/,'')+(location.search?'&':'?')+'vc='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+  const m=(await r.text()).match(/const GAME_VER='([\d.]+)'/);if(!m||verNum(m[1])<=verNum(GAME_VER))return;
+  const first=!newVer;newVer=m[1];$('#updTxt').textContent=`✨ 有新版本 v${newVer}（你現在玩的是舊版 v${GAME_VER}）`;$('#updBar').style.display='flex';$('#bUpd2').style.display='block';
+  if(first&&state==='play')toast(`✨ 遊戲有新版本 v${newVer}，按 Esc 可以存檔並更新`)}catch(e){}}
+async function updateNow(){for(const b of [$('#bUpd'),$('#bUpd2')]){b.disabled=true;b.textContent='💾 存檔中…'}
+ try{if(player&&curSlot>=0){const d=serialize();slotCache[curSlot]=d;await Store.set(curSlot,d)}}catch(e){}
+ const u=new URL(location.href);u.searchParams.set('v',newVer||Date.now());location.replace(u.toString())}
+$('#bUpd').onclick=updateNow;$('#bUpd2').onclick=updateNow;
+document.querySelectorAll('.verTxt').forEach(e=>e.textContent='v'+GAME_VER);
+setTimeout(checkUpdate,1500);setInterval(checkUpdate,5*60*1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
 async function saveGame(manual){if(curSlot<0||!player||(state!=='play'&&state!=='dead'))return null;if(saving)return null;saving=true;
  const d=serialize();slotCache[curSlot]=d;let r;try{r=await Store.set(curSlot,d)}finally{saving=false}
  const msg=r.okC?'已存檔 ✓（雲端＋這台裝置）':r.okL?'已存檔 ✓（這台裝置的瀏覽器）':'存檔失敗：這個瀏覽器不允許儲存資料';
