@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>鹽海新鮮人：鹽田求生記</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1420">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="鹽田求生記">
 <style>
 :root{--hot:#ff5e2c;--sea:#4b9bea;--sun:#fff100;--wind:#badcdc}
 html,body{margin:0;height:100%;background:#0d1420;overflow:hidden;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:none}
@@ -113,6 +121,7 @@ body.touch #log{bottom:150px}
   <h1><span class="a">鹽</span><span class="b">海</span><span class="c">新</span>鮮人：鹽田求生記</h1>
   <p class="sub">雲嘉南濱海國家風景區 ・ 2.5D 像素沙盒生存遊戲 —— 選一位夥伴，在鹽田、魚塭與海岸活過一夜又一夜！</p>
   <div id="updBar" style="display:none;background:#ffd23f;color:#1a1a2e;border:3px solid #000;padding:8px 12px;margin:0 0 12px;font-weight:700;align-items:center;gap:10px;flex-wrap:wrap"><span id="updTxt"></span><button class="btn" id="bUpd" style="font-size:15px;padding:6px 12px">🔄 重新整理（自動存檔）</button></div>
+  <div id="instBar" style="display:none;margin:0 0 12px;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn sec" id="bInstall" style="font-size:15px;padding:6px 12px">📲 安裝成 App</button><span class="hint" id="instTip" style="margin:0"></span></div>
   <div id="menuMain">
     <button class="btn" id="bContinue" style="display:none;margin-bottom:12px">▶ 繼續冒險</button>
     <div class="mcols">
@@ -1599,8 +1608,17 @@ let curSlot=-1,playTime=0,autosaveT=0,saving=false;const slotCache=[null,null,nu
 function serialize(){return {v:2,ss:4,ver:GAME_VER,map:L.id,seed:20260814,savedAt:Date.now(),char:selChar,day:G.day,t:G.t,world:rleEncode(world),
  p:{x:+player.x.toFixed(3),y:+player.y.toFixed(3),z:+player.z.toFixed(3),hp:player.hp,food:player.food},inv:{...inv},hotbar:hotbar.slice(),sel,playTime:Math.round(playTime),eq:{...eq},pets:pets.map(p=>({type:p.type})),activePet,sapProg:Object.fromEntries([...sapProg].map(([k,v])=>[k,Math.round(v)])),placed:[...placed].slice(0,30000),npcs:npcs.map(n=>({hab:n.hab,id:n.id,home:n.home,giftDay:n.giftDay,x:+n.x.toFixed(2),y:+n.y.toFixed(2),z:n.z})),cropProg:Object.fromEntries([...cropProg].map(([k,v])=>[k,Math.round(v)]))}}
 
+
+/* ================= PWA：離線快取＋安裝 ================= */
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+if('serviceWorker' in navigator&&self===top&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+let instEvt=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();instEvt=e;if(isStandalone())return;$('#instBar').style.display='flex';$('#bInstall').style.display='';$('#instTip').textContent='裝到手機或電腦，可以全螢幕、離線玩'});
+$('#bInstall').onclick=async()=>{if(!instEvt)return;instEvt.prompt();const r=await instEvt.userChoice.catch(()=>null);instEvt=null;$('#instBar').style.display='none';if(r&&r.outcome==='accepted')toast('📲 安裝完成！之後可以從主畫面開啟')};
+addEventListener('appinstalled',()=>{$('#instBar').style.display='none'});
+if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!isStandalone()&&self===top){$('#instBar').style.display='flex';$('#bInstall').style.display='none';$('#instTip').innerHTML='📲 iPhone／iPad：用 Safari 點下方「分享」→「<b>加入主畫面</b>」就能當 App 玩'}
 /* ================= 版本檢查 ================= */
-const GAME_VER='1.35.0';// 每次更新遊戲都要調高
+const GAME_VER='1.36.0';// 每次更新遊戲都要調高
 const verNum=v=>String(v).split('.').map(n=>parseInt(n)||0).reduce((a,n)=>a*1000+n,0);
 let newVer=null;
 async function checkUpdate(){try{const r=await fetch(location.href.split('#')[0].replace(/[?&]vc=\d+/,'')+(location.search?'&':'?')+'vc='+Date.now(),{cache:'no-store'});if(!r.ok)return;
