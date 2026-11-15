@@ -786,14 +786,19 @@ const isCrop=id=>id>=30&&id<=41;
 const CROPS=[{n:'黃豆',seed:131,prod:134},{n:'地瓜',seed:132,prod:135},{n:'洋香瓜',seed:133,prod:136}];
 const cropOf=id=>CROPS[Math.floor((id-30)/4)],stageOf=id=>(id-30)%4;
 let crops=new Set();
-function rebuildCrops(){crops.clear();for(let i=0;i<world.length;i++)if(isCrop(world[i]))crops.add(i)}
+function rebuildCrops(){crops.clear();for(const k of [...cropProg.keys()])if(!isCrop(world[k]))cropProg.delete(k);for(let i=0;i<world.length;i++)if(isCrop(world[i]))crops.add(i)}
 function waterNear(x,y,z){for(let dx=-3;dx<=3;dx++)for(let dy=-3;dy<=3;dy++)for(let dz=-1;dz<=0;dz++)if(raw(x+dx,y+dy,z+dz)===WATER)return true;return false}
-let cropT=0;
-function updateCrops(dt){cropT+=dt;if(cropT<1)return;cropT=0;
- for(const i of crops){const id=world[i];if(!isCrop(id)){crops.delete(i);continue}if(stageOf(id)>=3)continue;
+let cropT=0,cropProg=new Map();
+const DAYLIGHT=480*(13/24);// 一個白天約 260 秒（遊戲時間 05:40–18:40）
+function cropNeed(i,wet){const f=1+hash(i,7,3)*.15;return (wet?DAYLIGHT:DAYLIGHT*1.6)*f}
+function updateCrops(dt){cropT+=dt;if(cropT<1)return;const step=cropT;cropT=0;
+ if(G.night){if(crops.size&&!G.announced.cropNight){G.announced.cropNight=1;logMsg('天黑了，田裡的作物會停止生長，天亮再繼續長')}return}
+ for(const i of crops){const id=world[i];if(!isCrop(id)){crops.delete(i);cropProg.delete(i);continue}if(stageOf(id)>=3)continue;
   const x=i%W,y=Math.floor(i/W)%D,z=Math.floor(i/(W*D));const below=raw(x,y,z-1);
-  if(below!==FARM&&below!==FARM_WET){world[i]=AIR;crops.delete(i);continue}
-  if(Math.random()<(below===FARM_WET?1/38:1/95)){world[i]=id+1;if(stageOf(id+1)===3&&Math.hypot(x-player.x,y-player.y)<14)burst(x+.5,y+.5,z+.6,'#ffd23f',5)}}}
+  if(below!==FARM&&below!==FARM_WET){world[i]=AIR;crops.delete(i);cropProg.delete(i);continue}
+  const need=cropNeed(i,below===FARM_WET);const pr=(cropProg.has(i)?cropProg.get(i):stageOf(id)*need/3)+step;cropProg.set(i,pr);
+  const st=Math.min(3,Math.floor(pr/(need/3)));
+  if(st>stageOf(id)){world[i]=id-stageOf(id)+st;if(st===3&&Math.hypot(x-player.x,y-player.y)<14)burst(x+.5,y+.5,z+.6,'#ffd23f',5)}}}
 function useHoe(){if(held()!==130||!hover||hover.mon||hover.ani)return false;const{x,y,z,id}=hover;
  if(id!==GRASS&&id!==DIRT&&id!==SAND){logMsg('鋤頭要用在草地、泥土或沙地上');return true}
  if(raw(x,y,z+1)!==AIR&&!isPlant(raw(x,y,z+1))){logMsg('上面有東西擋著');return true}
@@ -805,8 +810,8 @@ function plantSeed(){const id=held();const ci=CROPS.findIndex(c=>c.seed===id);if
  if(hover.id!==FARM&&hover.id!==FARM_WET){logMsg('種子要種在農田上（先用鋤頭翻土）');return true}
  if(raw(x,y,z+1)!==AIR){logMsg('這格已經種了東西');return true}
  if(!reachOK(x,y,z)){logMsg('太遠了，靠近一點');return true}
- setB(x,y,z+1,30+ci*4);crops.add(IX(x,y,z+1));removeItem(id);AU.play('place');return true}
-function harvestCrop(x,y,z,id){const c=cropOf(id),st=stageOf(id);setB(x,y,z,AIR);crops.delete(IX(x,y,z));AU.play('break',2200);burst(x+.5,y+.5,z+.4,'#6fc35a',8);
+ setB(x,y,z+1,30+ci*4);crops.add(IX(x,y,z+1));cropProg.set(IX(x,y,z+1),0);removeItem(id);AU.play('place');return true}
+function harvestCrop(x,y,z,id){const c=cropOf(id),st=stageOf(id);setB(x,y,z,AIR);crops.delete(IX(x,y,z));cropProg.delete(IX(x,y,z));AU.play('break',2200);burst(x+.5,y+.5,z+.4,'#6fc35a',8);
  if(st>=3){const n=1+Math.floor(Math.random()*3);addItem(c.prod,n+(eq.body===113&&Math.random()<.25?1:0));addItem(c.seed,1+(Math.random()<.5?1:0));}
  else addItem(c.seed,1)}
 function drawCrop(c,cx,by,id,sw){const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(cx+x),Math.round(by+y),w,h)};const ci=Math.floor((id-30)/4),st=stageOf(id);const s=Math.round(sw||0);
@@ -1347,7 +1352,7 @@ const Store={cloud:null,status:'local',localOK:true,
 };
 let curSlot=-1,playTime=0,autosaveT=0,saving=false;const slotCache=[null,null,null];
 function serialize(){return {v:1,seed:20260814,savedAt:Date.now(),char:selChar,day:G.day,t:G.t,world:rleEncode(world),
- p:{x:+player.x.toFixed(3),y:+player.y.toFixed(3),z:+player.z.toFixed(3),hp:player.hp,food:player.food},inv:{...inv},hotbar:hotbar.slice(),sel,playTime:Math.round(playTime),eq:{...eq},pets:pets.map(p=>({type:p.type})),activePet}}
+ p:{x:+player.x.toFixed(3),y:+player.y.toFixed(3),z:+player.z.toFixed(3),hp:player.hp,food:player.food},inv:{...inv},hotbar:hotbar.slice(),sel,playTime:Math.round(playTime),eq:{...eq},pets:pets.map(p=>({type:p.type})),activePet,cropProg:Object.fromEntries([...cropProg].map(([k,v])=>[k,Math.round(v)]))}}
 async function saveGame(manual){if(curSlot<0||!player||(state!=='play'&&state!=='dead'))return null;if(saving)return null;saving=true;
  const d=serialize();slotCache[curSlot]=d;let r;try{r=await Store.set(curSlot,d)}finally{saving=false}
  const msg=r.okC?'已存檔 ✓（雲端＋這台裝置）':r.okL?'已存檔 ✓（這台裝置的瀏覽器）':'存檔失敗：這個瀏覽器不允許儲存資料';
@@ -1386,13 +1391,13 @@ function beginPlay(){riding=false;if(player)player.h=1.5;monsters=[];particles=[
  G.dark=darkAt((G.t*24+6)%24);G.night=G.dark>.5;G.hour=(G.t*24+6)%24;
  ['#start','#pause','#dead','#panel'].forEach(s=>$(s).classList.remove('show'));
  state='play';autosaveT=0;updateClock();if(AU.ctx&&AU.choice==='auto'&&TRACKS[AU.cur].mood!==AU.moodNow())AU.pickTrack()}
-function startNew(){AU.init();curSlot=pendingSlot;genWorld(20260814);player=newPlayer();inv={};eq={head:0,face:0,body:0,hand:0};pets=[];activePet=-1;hotbar=[0,0,0,0,0,0,0,0,0];sel=0;playTime=0;
+function startNew(){AU.init();curSlot=pendingSlot;cropProg=new Map();genWorld(20260814);player=newPlayer();inv={};eq={head:0,face:0,body:0,hand:0};pets=[];activePet=-1;hotbar=[0,0,0,0,0,0,0,0,0];sel=0;playTime=0;
  Object.assign(G,{t:1/24,day:1,started:false});addItem(TORCH,3,true);addItem(103,2,true);addItem(131,4,true);beginPlay();
  toast(`歡迎來到雲嘉南濱海！${player.ch.name}出發了`);saveGame(false);
  setTimeout(()=>logMsg('按住左鍵挖方塊：先砍木麻黃取得原木'),1200);setTimeout(()=>logMsg('按 E 打開合成台：原木→木板→火把、木劍'),5000);setTimeout(()=>logMsg('點鹽田的水可以曬鹽，點魚塭可以釣虱目魚'),9000);setTimeout(()=>logMsg('按 Esc 開選單：存檔、換音樂、回首頁'),13000)}
 function loadSlot(i){const d=slotCache[i];if(!d)return;AU.init();curSlot=i;selChar=d.char||0;genWorld(d.seed||20260814);
  try{world.set(rleDecode(d.world,W*D*H))}catch(e){toast('存檔資料損壞，無法讀取');return}
- rebuildLights();rebuildCrops();player=newPlayer();Object.assign(player,{x:d.p.x,y:d.p.y,z:d.p.z,hp:Math.max(1,d.p.hp),food:d.p.food});
+ cropProg=new Map(Object.entries(d.cropProg||{}).map(([k,v])=>[+k,v]));rebuildLights();rebuildCrops();player=newPlayer();Object.assign(player,{x:d.p.x,y:d.p.y,z:d.p.z,hp:Math.max(1,d.p.hp),food:d.p.food});
  inv={};for(const k in d.inv)if(d.inv[k]>0)inv[+k]=d.inv[k];hotbar=(d.hotbar||[]).map(Number).concat([0,0,0,0,0,0,0,0,0]).slice(0,9);sel=d.sel||0;
  eq=Object.assign({head:0,face:0,body:0,hand:0},d.eq||{});pets=(d.pets||[]).filter(q=>PETS[q.type]);activePet=typeof d.activePet==='number'&&d.activePet<pets.length?d.activePet:-1;applyEq();player.hp=Math.max(1,Math.min(d.p.hp,player.maxHp));
  Object.assign(G,{t:d.t,day:d.day,started:true});playTime=d.playTime||0;beginPlay();toast(`讀取存檔 ${i+1}・第 ${G.day} 天`);AU.play('save')}
