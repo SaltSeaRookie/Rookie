@@ -73,6 +73,9 @@ body.touch #np{bottom:auto;top:80px}
 .hbs{border-color:#5e7aa8}.hbs.sel{border-color:var(--sun);box-shadow:0 0 0 2px #000}.hbs b{position:absolute;left:3px;top:0;font-size:11px;color:#9fb6d6}
 .slot.dropok{border-color:#7dff7a!important;background:#173a24}
 #dragGhost{position:fixed;z-index:50;pointer-events:none;width:40px;height:40px;image-rendering:pixelated;display:none;filter:drop-shadow(2px 2px 0 #000)}
+#habHint{position:absolute;left:50%;top:44px;transform:translateX(-50%);z-index:5;background:rgba(11,21,40,.82);border:2px solid #ffd23f;padding:4px 12px;font-size:13px;pointer-events:none;display:none;white-space:nowrap;text-shadow:1px 1px 0 #000}
+#habHint b{color:#ffd23f}
+body.touch #habHint{top:auto;bottom:64px;font-size:12px}
 #touch{display:none}
 body.touch #touch{display:block}
 body.touch #log{bottom:150px}
@@ -93,6 +96,7 @@ body.touch #log{bottom:150px}
 <div id="toast"></div>
 <div id="itemName"></div>
 <div id="np"></div>
+<div id="habHint"></div>
 <div id="tip"></div>
 <img id="dragGhost" alt="">
 <div id="touch">
@@ -293,19 +297,21 @@ const AU={ctx:null,musicOn:savedOn,choice:savedMusic,cur:0,bar:0,barsLeft:16,ste
 };
 
 /* ================= BLOCKS ================= */
-const W=64,D=64,H=20,SEA=3;
+let W=96,D=96;const H=20,SEA=3;
 const AIR=0,GRASS=1,DIRT=2,SAND=3,STONE=4,SALT=5,LOG=6,LEAF=7,WATER=8,PLANK=9,TORCH=10,PAN=11,OYSTER=12,BEDROCK=13,LAMP=14;
 const PALM_LOG=15,PALM_LEAF=16,HIB_LEAF=17,MANG_LEAF=18,GLASS=24,WHITE=25,DOOR=26,DOOR_O=27;
 const BL={1:{n:'草地',h:.5,drop:2},2:{n:'泥土',h:.5},3:{n:'沙灘',h:.4},4:{n:'咾咕石',h:1.6},5:{n:'鹽塊',h:.8},6:{n:'木麻黃原木',h:1.1},7:{n:'木麻黃葉',h:.25},8:{n:'海水',h:2},9:{n:'木板',h:.9},10:{n:'火把',h:.05},11:{n:'鹽田瓦盤',h:.7},12:{n:'蚵殼堆',h:.9},13:{n:'基岩',h:Infinity},14:{n:'鹽燈',h:.5}};
-Object.assign(BL,{28:{n:'農田',h:.5,drop:2},29:{n:'濕潤農田',h:.5,drop:2},30:{n:'黃豆幼苗',h:.05},31:{n:'黃豆',h:.05},32:{n:'黃豆',h:.05},33:{n:'黃豆（可收成）',h:.05},34:{n:'地瓜幼苗',h:.05},35:{n:'地瓜',h:.05},36:{n:'地瓜',h:.05},37:{n:'地瓜（可收成）',h:.05},38:{n:'洋香瓜幼苗',h:.05},39:{n:'洋香瓜',h:.05},40:{n:'洋香瓜',h:.05},41:{n:'洋香瓜（可收成）',h:.05},15:{n:'椰子樹幹',h:1},16:{n:'椰子葉',h:.25},17:{n:'黃槿葉',h:.25},18:{n:'海茄苳葉',h:.25},19:{n:'馬鞍藤',h:.05},20:{n:'文殊蘭',h:.05},21:{n:'天人菊',h:.05},22:{n:'蔓荊',h:.05},23:{n:'海馬齒',h:.05},24:{n:'水晶玻璃',h:.5},25:{n:'白色石材',h:1.2},26:{n:'水晶門',h:.8},27:{n:'水晶門',h:.8,drop:26}});
-const ITEMS={100:{n:'木劍',dmg:4},101:{n:'咾咕石劍',dmg:6},102:{n:'虱目魚',food:3,heal:0},103:{n:'鹽烤虱目魚',food:9,heal:4},104:{n:'蟹肉',food:3,heal:0},105:{n:'鹽焗蟹',food:8,heal:3},106:{n:'鹽晶'},108:{n:'鹽晶護符',desc:'放背包裡：受到傷害 -35%'},110:{n:'鹽工斗笠',slot:'head',desc:'頭飾：白天比較不容易餓'},111:{n:'花冠',slot:'head',desc:'頭飾：抓寵物時判定區變大'},112:{n:'墨鏡',slot:'face',desc:'臉部：阿鹹同款！白天陽光不刺眼，移動、挖掘速度 +15%，鏡片還會閃光'},113:{n:'斜背包',slot:'body',desc:'身上：採集時 25% 機率多得 1 個'},119:{n:'金鉗',dmg:8,rare:1,desc:'稀有寶物（夜潮蟹 5%）：金光閃閃的大鉗子，攻擊力 8'},120:{n:'霧光提燈',rare:1,desc:'稀有寶物（霧魂 3%）：放背包裡，身上的光變大，霧魂不敢靠近你'},121:{n:'鹽之王冠',slot:'head',rare:1,desc:'稀有寶物（鹽堆巨人 35%）：頭飾，最大血量 +6（3 顆心）'},130:{n:'鋤頭',desc:'拿著對草地、泥土或沙地按右鍵，翻成農田（靠近水會變成濕潤農田，長得比較快）'},131:{n:'黃豆種子',desc:'拿著對農田按右鍵種下；收成的黃豆可以做鹽滷豆花'},132:{n:'地瓜苗',desc:'拿著對農田按右鍵種下'},133:{n:'洋香瓜種子',desc:'七股、北門一帶的名產！拿著對農田按右鍵種下'},134:{n:'黃豆',desc:'做鹽滷豆花的材料'},135:{n:'地瓜',food:2,heal:0},136:{n:'洋香瓜',food:6,heal:3,desc:'香甜多汁'},137:{n:'烤地瓜',food:7,heal:2},138:{n:'鹽滷豆花',food:10,heal:6,desc:'用曬鹽留下的鹽滷點成的豆花，吃了 40 秒內快速回血'},140:{n:'探險帽',slot:'head',desc:'阿皮的觀鳥裝扮｜頭飾：動物比較不會被你嚇跑（察覺距離 -40%）'},141:{n:'收音耳機',slot:'head',desc:'阿光的錄音裝備｜頭飾：聽得見 16 格內的怪物，畫面邊緣會出現紅色箭頭'},142:{n:'探險背心',slot:'body',desc:'口袋超多｜身上：吃東西時飽足 +30%'},
+Object.assign(BL,{46:{n:'木麻黃樹苗',h:.05},47:{n:'椰子樹苗',h:.05},48:{n:'黃槿樹苗',h:.05},49:{n:'海茄苳樹苗',h:.05},50:{n:'林投蓆',h:.3},43:{n:'野草叢',h:.05},44:{n:'林投',h:.3},45:{n:'草海桐',h:.2},42:{n:'白色陶片',h:1},28:{n:'農田',h:.5,drop:2},29:{n:'濕潤農田',h:.5,drop:2},30:{n:'黃豆幼苗',h:.05},31:{n:'黃豆',h:.05},32:{n:'黃豆',h:.05},33:{n:'黃豆（可收成）',h:.05},34:{n:'地瓜幼苗',h:.05},35:{n:'地瓜',h:.05},36:{n:'地瓜',h:.05},37:{n:'地瓜（可收成）',h:.05},38:{n:'洋香瓜幼苗',h:.05},39:{n:'洋香瓜',h:.05},40:{n:'洋香瓜',h:.05},41:{n:'洋香瓜（可收成）',h:.05},15:{n:'椰子樹幹',h:1},16:{n:'椰子葉',h:.25},17:{n:'黃槿葉',h:.25},18:{n:'海茄苳葉',h:.25},19:{n:'馬鞍藤',h:.05},20:{n:'文殊蘭',h:.05},21:{n:'天人菊',h:.05},22:{n:'蔓荊',h:.05},23:{n:'海馬齒',h:.05},24:{n:'水晶玻璃',h:.5},25:{n:'白色石材',h:1.2},26:{n:'水晶門',h:.8},27:{n:'水晶門',h:.8,drop:26}});
+Object.assign(BL,{51:{n:'日月小樹',h:.3},52:{n:'橘色鹽花',h:.3},53:{n:'帆船鳥',h:.3},54:{n:'綠芽黃花',h:.3},55:{n:'飛翔白鷺',h:.3},56:{n:'積木小屋',h:.3},57:{n:'清水模',h:1.4}});
+const ITEMS={100:{n:'木劍',dmg:4},101:{n:'咾咕石劍',dmg:6},102:{n:'虱目魚',food:3,heal:0},103:{n:'鹽烤虱目魚',food:9,heal:4},104:{n:'蟹肉',food:3,heal:0},105:{n:'鹽焗蟹',food:8,heal:3},106:{n:'鹽晶'},108:{n:'鹽晶護符',desc:'放背包裡：受到傷害 -35%'},110:{n:'鹽工斗笠',slot:'head',desc:'頭飾：白天比較不容易餓'},111:{n:'花冠',slot:'head',desc:'頭飾：抓寵物時判定區變大'},112:{n:'墨鏡',slot:'face',desc:'臉部：阿鹹同款！白天陽光不刺眼，移動、挖掘速度 +15%，鏡片還會閃光'},113:{n:'斜背包',slot:'body',desc:'身上：採集時 25% 機率多得 1 個'},119:{n:'金鉗',dmg:7,rare:1,desc:'稀有寶物（夜潮蟹 3%）：金光閃閃的大鉗子，攻擊力 7'},120:{n:'霧光提燈',rare:1,desc:'稀有寶物（霧魂 3%）：放背包裡，身上的光變大，霧魂不敢靠近你'},121:{n:'鹽之王冠',slot:'head',rare:1,desc:'稀有寶物（鹽堆巨人 35%）：頭飾，最大血量 +6（3 顆心）'},130:{n:'鋤頭',desc:'拿著對草地、泥土或沙地按右鍵，翻成農田（靠近水會變成濕潤農田，長得比較快）'},131:{n:'黃豆種子',desc:'拿著對農田按右鍵種下；收成的黃豆可以做鹽滷豆花'},132:{n:'地瓜苗',desc:'拿著對農田按右鍵種下'},133:{n:'洋香瓜種子',desc:'七股、北門一帶的名產！拿著對農田按右鍵種下'},134:{n:'黃豆',desc:'做鹽滷豆花的材料'},135:{n:'地瓜',food:2,heal:0},136:{n:'洋香瓜',food:6,heal:3,desc:'香甜多汁'},137:{n:'烤地瓜',food:7,heal:2},138:{n:'鹽滷豆花',food:10,heal:6,desc:'用曬鹽留下的鹽滷點成的豆花，吃了 40 秒內快速回血'},140:{n:'探險帽',slot:'head',desc:'阿皮的觀鳥裝扮｜頭飾：動物比較不會被你嚇跑（察覺距離 -40%）'},141:{n:'收音耳機',slot:'head',desc:'阿光的錄音裝備｜頭飾：聽得見 16 格內的怪物，畫面邊緣會出現紅色箭頭'},142:{n:'探險背心',slot:'body',desc:'口袋超多｜身上：吃東西時飽足 +30%'},
 143:{n:'放大鏡',slot:'hand',desc:'阿皮的觀察工具｜手持：挖草地找到種子的機率 12% → 35%'},144:{n:'雙筒望遠鏡',slot:'hand',desc:'阿咻的望遠鏡｜手持：挖掘、放置距離 +1.5 格'},145:{n:'鳥類圖鑑',slot:'hand',desc:'阿波的圖鑑｜手持：抓寵物時計時條變慢 30%'},
 146:{n:'平安令旗',slot:'hand',desc:'鯤鯓王平安鹽祭｜手持：揮舞令旗，攻擊力 +2'},147:{n:'草藥缽',slot:'hand',desc:'阿咻的藥缽｜手持：吃東西回血 +50%（至少多回半顆心）'},148:{n:'開運毛筆',slot:'hand',desc:'鹹味兄弟的魔法小工具｜手持：畫符保平安，夜晚怪物數量上限 -30%'},
 149:{n:'王令',slot:'hand',desc:'阿波拿的王令｜手持：釣魚、曬鹽成功率 +30%，偶爾會有魚跳到頭上'},150:{n:'羅盤',slot:'hand',desc:'阿光的羅盤｜手持：畫面左上顯示回水晶教堂的方向；夜晚移動 +10%'},151:{n:'七星寶劍',dmg:7,desc:'阿光偷學的寶劍｜武器：攻擊力 7，砍霧魂傷害加倍'},
-116:{n:'捕捉網',desc:'拿在手上，點動物開始捕捉'},117:{n:'魚餌',desc:'拿在手上按右鍵放在地上，吸引動物'}};
+160:{n:'寵物飼料',desc:'每次嘗試捕捉寵物會用掉 1 份（不論成功或失敗）'},175:{n:'青草膏',food:1,heal:8,desc:'草海桐和文殊蘭搗成的藥膏：立刻回 4 顆心'},180:{n:'木桶',desc:'空的：拿著對水面按右鍵，裝一桶水'},181:{n:'水桶',desc:'裝滿水：對方塊按右鍵把水倒出來，就能自己做水池、濕地'},116:{n:'捕捉網',desc:'拿在手上，點動物開始捕捉'},117:{n:'魚餌',desc:'拿在手上按右鍵放在地上，吸引動物'}};
 const nameOf=id=>id<100?BL[id].n:ITEMS[id].n;
 const placeable=id=>id>0&&id<100&&id!==WATER&&id!==BEDROCK&&id!==27;
-const solid=id=>id!==AIR&&id!==WATER&&id!==TORCH&&!(id>=19&&id<=23)&&id!==27&&!(id>=30&&id<=41);
+const isDecor=id=>isPlant(id)||(id>=46&&id<=50);
+const solid=id=>id!==AIR&&id!==WATER&&id!==TORCH&&!isDecor(id)&&id!==27&&!(id>=30&&id<=41);
 const opaque=id=>solid(id)&&id!==LEAF&&id!==16&&id!==17&&id!==18&&id!==24&&id!==26;
 
 function texColor(id,face,u,v,r,px,py,fr){
@@ -325,8 +331,10 @@ function texColor(id,face,u,v,r,px,py,fr){
   case 16: if(r<.32)return null;return px%3===0?hx('#3f8f3a'):jit('#6cbf4a',n*18);
   case 17: if(r<.1)return null;if(r>.95)return hx('#ffd23f');if(r>.93)return hx('#7a2a1a');return jit('#3f8f3a',n*22);
   case 18: if(r<.16)return null;return r>.8?hx('#5d8a6a'):jit('#2e5e3a',n*16);
-  case 24: if(u<.08||u>.92||v<.08||v>.92)return [225,242,255,225];if(Math.abs(u-v-.15)<.05||Math.abs(u-v+.25)<.03)return [255,255,255,170];return [110,180,240,125];
+  case 24: if(u<.08||u>.92||v<.08||v>.92)return [210,245,242,235];if(Math.abs(u-v-.15)<.05||Math.abs(u-v+.25)<.03)return [225,255,250,175];return v<.5?[52,168,184,170]:[38,140,160,180];
   case 25: if((u*2)%1<.06||(v*2)%1<.06)return hx('#d7dde3');return jit('#f2f4f6',n*6);
+  case 57: {if(face==='top'){const fu=(u*2)%1,fv=(v*2)%1;if(fu<.05||fv<.05)return hx('#aeb9c1');return r>.95?hx('#dfe6ea'):jit('#c8d2d9',n*8)}return v<.12?hx('#d6dee3'):jit('#b3bec6',n*8)}
+  case 42: {const fu=(u*4)%1,fv=(v*4+Math.floor(u*4)*.5)%1;if(fu<.1||fv<.1)return hx('#c3c8ce');if(r>.92)return hx('#dbe9f3');if(r<.05)return hx('#eadfcf');return jit('#f6f7f8',n*8)}
   case 28: case 29: {const wet=id===29;if(face==='top'){if(Math.floor(u*6)%2===0)return hx(wet?'#2e1d10':'#4a3220');return jit(wet?'#4a301a':'#6e5236',n*14)}return v<.12?hx(wet?'#4a301a':'#6e5236'):r>.9?hx('#6e5236'):jit('#8a6a45',n*24)}
   case 26: if(face==='top')return hx('#f4f6f8');if(u<.07||u>.93||v<.07||v>.93)return hx('#f4f6f8');if(u<.16||u>.84||v<.16||v>.84)return hx('#ffd23f');if(Math.abs(u-v)<.06)return [150,205,250,255];return jit('#2f6fc0',n*10);
   case PLANK: if(face==='top') return Math.floor(u*16)%4===0?hx('#9c7340'):jit('#c8995a',n*12);
@@ -358,7 +366,7 @@ function makeBlockSprite(id,opt={}){
 }
 const SPR={};const WTOP=[],WFULL=[];const CRACK=[];
 function buildBlockSprites(){
- for(const id of [1,2,3,4,5,6,7,9,11,12,13,14,15,16,17,18,24,25,26])SPR[id]=makeBlockSprite(id);SPR[28]=makeBlockSprite(28);SPR[29]=makeBlockSprite(29);
+ for(const id of [1,2,3,4,5,6,7,9,11,12,13,14,15,16,17,18,24,25,26])SPR[id]=makeBlockSprite(id);SPR[28]=makeBlockSprite(28);SPR[42]=makeBlockSprite(42);SPR[57]=makeBlockSprite(57);SPR[29]=makeBlockSprite(29);
  for(let f=0;f<4;f++){WTOP.push(makeBlockSprite(WATER,{topOnly:true,fr:f*2}));WFULL.push(makeBlockSprite(WATER,{fr:f*2}));}
  for(let s=0;s<4;s++){const cv=document.createElement('canvas');cv.width=cv.height=32;const g=cv.getContext('2d');g.fillStyle='rgba(0,0,0,.55)';
   const r=mulberry32(77);for(let k=0;k<(s+1)*5;k++){let x=8+r()*16,y=6+r()*20;for(let j=0;j<5+s*2;j++){g.fillRect(x|0,y|0,1,1);x+=Math.round(r()*2-1);y+=Math.round(r()*2-1);}}
@@ -473,7 +481,10 @@ const ICON={},ICONURL={};
 function makeIcon(id){
  const cv=document.createElement('canvas');cv.width=cv.height=16;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
  if(SPR[id]){c.drawImage(SPR[id],0,0,32,32,0,0,16,16);return cv}
+ if(isSculpt(id)){const t=document.createElement('canvas');t.width=t.height=32;drawSculpt(t.getContext('2d'),16,31,id);c.drawImage(t,0,0,16,16);return cv}
  if(isPlant(id)){drawPlant(c,8,16,id,0);return cv}
+ if(id>=46&&id<=49){drawSapling(c,8,15,id,0);return cv}
+ if(id===50){drawMat(c,-8,-14);return cv}
  const g=grid(16,16);
  if(id===TORCH){grect(g,7,6,2,9,'#7a5230');grect(g,6,2,4,4,'#ff5e2c');grect(g,7,1,2,3,'#fff100');}
  else if(id===100||id===101){const bl=id===100?'#d9a868':'#c9c3b5',bd=id===100?'#9c7340':'#8a857a';
@@ -507,6 +518,9 @@ function makeIcon(id){
  else if(id===149){grect(g,5,1,6,10,'#ffd23f');grect(g,5,1,6,1,'#ffe680');for(const y of [3,5,7])grect(g,7,y,2,1,'#d8342c');grect(g,7,11,2,4,'#c9a000')}
  else if(id===150){gell(g,8,8,6.5,6.5,'#d9b56a');gell(g,8,8,4.6,4.6,'#f4f6f8');gline(g,8,8,8,4,'#d8342c');gline(g,8,9,8,12,'#4b9bea');gs(g,8,8,'#333')}
  else if(id===151){for(let i=0;i<9;i++){gs(g,5+i,10-i,'#e8eef2');gs(g,6+i,10-i,'#e8eef2');gs(g,6+i,11-i,'#a9b6bf')}for(const i of [1,3,5,7])gs(g,6+i,10-i,'#ffd23f');gline(g,2,8,6,12,'#ffd23f');gline(g,4,10,1,13,'#7a5230');gs(g,0,14,'#d8342c');gs(g,1,15,'#d8342c')}
+ else if(id===160){gpoly(g,[[3,4],[13,4],[14,14],[2,14]],'#c8a46a');grect(g,3,4,10,2,'#a8844a');for(const[x,y]of[[5,8],[8,9],[11,8],[6,11],[10,12]])grect(g,x,y,2,2,'#8a5a2a');gs(g,8,2,'#7a5230')}
+ else if(id===175){grect(g,4,4,8,10,'#e8f4f4');grect(g,4,4,8,2,'#7a5230');grect(g,5,7,6,5,'#6fc35a');gs(g,6,8,'#b5ec8a');gs(g,9,10,'#3f8f3a')}
+ else if(id===180||id===181){grect(g,4,5,8,9,'#a07a4e');grect(g,4,7,8,1,'#6e5236');grect(g,4,11,8,1,'#6e5236');gline(g,4,4,8,1,'#7a5230');gline(g,8,1,12,4,'#7a5230');grect(g,5,5,6,1,id===181?'#4b9bea':'#5a3d24');if(id===181){gs(g,6,5,'#bfe6ff')}}
  else if(id===110){gpoly(g,[[1,11],[15,11],[8,4]],'#d9b56a');grect(g,0,11,16,2,'#b08a45');gline(g,5,8,11,8,'#c49a50')}
  else if(id===111){for(let i=0;i<14;i++){const a=i/14*Math.PI*2;gs(g,8+Math.cos(a)*5.5,8+Math.sin(a)*3.5,['#d94fa3','#ffd23f','#ffffff','#d8342c','#4f9a45'][i%5])}}
  else if(id===112){grect(g,2,6,5,3,'#111');grect(g,9,6,5,3,'#111');grect(g,7,6,2,1,'#111');gs(g,3,6,'#5fb6ef');gs(g,10,6,'#5fb6ef')}
@@ -516,13 +530,64 @@ function makeIcon(id){
  else if(id===108){gline(g,3,1,8,6,'#9c7340');gline(g,13,1,8,6,'#9c7340');gpoly(g,[[8,5],[12,10],[8,15],[4,10]],'#badcdc');gpoly(g,[[8,5],[12,10],[8,10]],'#ffffff');}
  goutline(g);const s=gcanvas(g);c.drawImage(s,0,0);return cv;
 }
-function buildIcons(){for(const id of [1,2,3,4,5,6,7,9,10,11,12,14,15,16,17,18,19,20,21,22,23,24,25,26,100,101,102,103,104,105,106,108,110,111,112,113,116,117,119,120,121,140,141,142,143,144,145,146,147,148,149,150,151,130,131,132,133,134,135,136,137,138]){ICON[id]=makeIcon(id);ICONURL[id]=ICON[id].toDataURL()}}
+function buildIcons(){for(const id of [51,52,53,54,55,56,57,180,181,46,47,48,49,50,175,43,44,45,160,42,1,2,3,4,5,6,7,9,10,11,12,14,15,16,17,18,19,20,21,22,23,24,25,26,100,101,102,103,104,105,106,108,110,111,112,113,116,117,119,120,121,140,141,142,143,144,145,146,147,148,149,150,151,130,131,132,133,134,135,136,137,138]){ICON[id]=makeIcon(id);ICONURL[id]=ICON[id].toDataURL()}}
 
 /* ================= WORLD ================= */
 let world=new Uint8Array(W*D*H);
 const IX=(x,y,z)=>x+y*W+z*W*D;
 function raw(x,y,z){if(x<0||y<0||x>=W||y>=D||z<0||z>=H)return AIR;return world[IX(x,y,z)]}
 function solidAt(x,y,z){if(x<0||y<0||x>=W||y>=D||z<0)return true;if(z>=H)return false;return solid(world[IX(x,y,z)])}
+function buildChurch(L,clear){const base=4,{xc,cy0}=L.ch,[px0,px1,py0,py1]=L.ch.pond;
+ if(clear)for(let y=py0;y<=py1;y++)for(let x=px0;x<=px1;x++)for(let z=5;z<H;z++){setB(x,y,z,AIR);if(typeof placed!=='undefined')placed.delete(IX(x,y,z))}
+ // 水池＋白色路緣
+ for(let y=py0;y<=py1;y++)for(let x=px0;x<=px1;x++){for(let z=5;z<H;z++)setB(x,y,z,AIR);setB(x,y,1,STONE);setB(x,y,2,DIRT);const curb=x===px0||x===px1||y===py0||y===py1;if(curb){setB(x,y,3,STONE);setB(x,y,4,WHITE);continue}setB(x,y,3,DIRT);setB(x,y,4,WATER)}
+ // 白色大平台（右前角斜切）與 L 形步道
+ // 左右對稱的白色平台：前方兩角對稱斜切，步道從正中央接出去
+ const fx0=xc-5,fx1=xc+5,fy0=cy0-2,fy1=cy0+11;
+ for(let y=fy0;y<=fy1;y++)for(let x=fx0;x<=fx1;x++){if(Math.abs(x-xc)+y>fy1+3)continue;setB(x,y,3,STONE);setB(x,y,4,WHITE)}
+ for(let y=fy1+1;y<=L.ch.walkEnd;y++)for(let x=xc-1;x<=xc+1;x++){setB(x,y,3,STONE);setB(x,y,4,WHITE);for(let z=5;z<H;z++)if(raw(x,y,z)!==TORCH)setB(x,y,z,AIR)}
+ // 尖拱斷面：兩段圓弧交成尖頂（哥德式）
+ const hw=(a,R,k)=>{const h=k+.5;const v=R*R-h*h;return v<0?-1:Math.sqrt(v)-(R-a)};
+ const inA=(a,R,dx,k)=>k>=0&&Math.abs(dx)<=hw(a,R,k);
+ const edge=(a,R,dx,k)=>inA(a,R,dx,k)&&(!inA(a,R,dx-1,k)||!inA(a,R,dx+1,k)||!inA(a,R,dx,k+1));
+ const MA=3.5,MR=16,PA=2.5,PR=10;// 主堂、前廊
+ const hy0=cy0,hy1=cy0+6,py=cy0+9;
+ for(let y=hy0;y<=py;y++){const main=y<=hy1;const a=main?MA:PA,R=main?MR:PR;const off=y-hy0;
+  for(let k=0;k<14;k++)for(let dx=-4;dx<=4;dx++){if(!inA(a,R,dx,k))continue;const x=xc+dx,z=base+1+k;let v=AIR;
+   const rib=off%2===0||y===py;
+   if(edge(a,R,dx,k))v=rib||k>=(main?7:4)?WHITE:GLASS;// 下半部是玻璃牆、上半部是白色屋面
+   else if(y===hy0)v=(dx===0||k%3===2)?WHITE:GLASS;// 後方山牆：整面玻璃＋白色格線
+   else if(y===hy1&&!inA(PA,PR,dx,k))v=(dx===0||k%3===2)?WHITE:GLASS;// 主堂正面：前廊以上是玻璃
+   setB(x,y,z,v)}}
+ // 白色細柱：每道肋拱落地處往外撐一點
+ for(let y=hy0;y<=py;y+=2){const a=y<=hy1?MA:PA;const d=Math.floor(a)+1;for(const s of[-1,1])setB(xc+s*d,y,base+1,WHITE)}
+ setB(xc,py,base+1,AIR);
+ setB(xc-2,cy0+1,base+1,LAMP);setB(xc+2,cy0+1,base+1,LAMP);
+ for(const y of [cy0+3,cy0+5])for(const x of [xc-2,xc+2])setB(x,y,base+1,PLANK);
+ for(const y of [py1+1,L.ch.walkEnd]){setB(xc-2,y,base+1,TORCH);setB(xc+2,y,base+1,TORCH)}}
+function buildSanshan(L,clear){if(!L.wet)return;const[X0,X1,Y0,Y1]=L.wet;const dx0=X0+4,dx1=X0+16,dy0=Y0+5,dy1=Y0+13;
+ if(clear)for(let y=dy0;y<=dy1;y++)for(let x=dx0;x<=dx1;x++)for(let z=5;z<H;z++){setB(x,y,z,AIR);if(typeof placed!=='undefined')placed.delete(IX(x,y,z))}
+ for(let y=dy0;y<=dy1;y++)for(let x=dx0;x<=dx1;x++)setB(x,y,4,57);// 淺灰清水模平台
+ for(let x=dx0;x<=dx1;x++)setB(x,dy0,5,57);for(let y=dy0;y<=dy1-4;y++){setB(dx0,y,5,57);setB(dx1,y,5,57)}// 後方與兩側矮牆
+ const B=5,y0=dy0+1,y1=dy0+5;
+ // 每層的平面：矩形 [x0,x1,ya,yb]，cut=切掉四個角讓它圓一點
+ const lay=(k,x0,x1,ya,yb,cut,v=42)=>{for(let y=ya;y<=yb;y++)for(let x=x0;x<=x1;x++){if(cut&&(x===x0||x===x1)&&(y===ya||y===yb))continue;setB(x,y,B+k,v)}};
+ const hollow=(k,x0,x1,ya,yb)=>{for(let y=ya;y<=yb;y++)for(let x=x0;x<=x1;x++){setB(x,y,B+k,AIR);if(k===0)setB(x,y,B-1,PLANK)}};
+ const col=(x,y,z0,z1)=>{for(let z=z0;z<=z1;z++)setB(x,y,z,42)};
+ const small=(x0,doorX,winX,winZ)=>{const x1=x0+3;for(let k=0;k<3;k++){lay(k,x0,x1,y0,y1,1);hollow(k,x0+1,x1-1,y0+1,y1-1)}lay(3,x0+1,x1-1,y0+1,y1-1,0);
+  setB(doorX,y1,B,AIR);setB(doorX,y1,B+1,AIR);setB(doorX,y1,B-1,PLANK);setB(winX,y1,winZ,AIR)};
+ // 左：島嶼的山——平頂，後方高起一座尖塔、前方一座小尖
+ const a0=dx0;small(a0,a0+1,a0+2,B+1);col(a0+1,y0+1,B+4,B+5);setB(a0+1,y0+1,B+6,51);col(a0+2,y0+3,B+4,B+4);setB(a0+2,y0+3,B+5,52);
+ // 中：故鄉的山——最高，像鐘一樣往上收，頂端站著帆船鳥
+ const m0=dx0+4,m1=m0+4,mc=m0+2,yc=y0+2;
+ for(let k=0;k<4;k++){lay(k,m0,m1,y0,y1,1);hollow(k,m0+1,m1-1,y0+1,y1-1)}
+ lay(4,m0+1,m1-1,y0+1,y1-1,0);lay(5,m0+1,m1-1,y0+1,y1-1,1);
+ for(const[dx,dy]of[[0,0],[1,0],[-1,0],[0,1],[0,-1]])setB(mc+dx,yc+dy,B+6,42);col(mc,yc,B+7,B+8);setB(mc,yc,B+9,53);
+ for(let k=0;k<3;k++)setB(mc,y1,B+k,AIR);setB(mc,y1,B-1,PLANK);setB(mc,yc+1,B+5,AIR);setB(mc,yc+1,B+6,AIR);// 大拱門＋上方兩個小窗
+ setB(m1-1,y0+1,B+5,54);
+ // 右：守護的山——平頂，右後方高起，放積木小屋；前面停一隻白鷺
+ const r0=dx0+9;small(r0,r0+2,r0+1,B+1);col(r0+2,y0+1,B+4,B+5);col(r0+2,y0+2,B+4,B+4);setB(r0+2,y0+1,B+6,56);setB(r0+1,y0+3,B+4,55);
+ setB(dx0,dy1,B,LAMP);setB(dx1,dy1,B,LAMP)}
 function setB(x,y,z,v){if(x>=0&&y>=0&&x<W&&y<D&&z>=0&&z<H)world[IX(x,y,z)]=v}
 function topZ(x,y){for(let z=H-1;z>=0;z--)if(solid(raw(x,y,z)))return z;return 0}
 let lights=new Set();
@@ -530,21 +595,27 @@ function rebuildLights(){lights.clear();for(let i=0;i<world.length;i++)if(world[
 function makeNoise(r,size=16){const a=[];for(let i=0;i<size*size;i++)a.push(r());const s=t=>t*t*(3-2*t);
  return (x,y)=>{x=((x%size)+size)%size;y=((y%size)+size)%size;const x0=Math.floor(x),y0=Math.floor(y),x1=(x0+1)%size,y1=(y0+1)%size,u=s(x-x0),v=s(y-y0);const A=a[x0+y0*size],B=a[x1+y0*size],C=a[x0+y1*size],E=a[x1+y1*size];return A+(B-A)*u+(C-A)*v+(A-B-C+E)*u*v}}
 let COAST=[];
+const LAYOUTS={
+ v1:{id:'v1',W:64,D:64,coast:51,pans:[27,45,4,27],ponds:[27,45,34,58],zone:[9,25,16,40],ch:{xc:17,cx0:15,cx1:19,cy0:23,cy1:31,pond:[9,25,17,37],walkEnd:39,torchY:37},mount:[11,50],hill:16,wet:null},
+ v2:{id:'v2',W:96,D:96,coast:82,pans:[58,76,8,31],ponds:[58,76,42,66],zone:[30,46,30,54],ch:{xc:38,cx0:36,cx1:40,cy0:37,cy1:45,pond:[30,46,31,51],walkEnd:54,torchY:51},mount:[14,80],hill:18,wet:[38,56,68,88]},
+};
+let L=LAYOUTS.v2;
+function setLayout(id){L=LAYOUTS[id]||LAYOUTS.v1;W=L.W;D=L.D;world=new Uint8Array(W*D*H)}
+const inRect=(x,y,R)=>R&&x>=R[0]&&x<=R[1]&&y>=R[2]&&y<=R[3];
 function genWorld(seed){
  world.fill(0);const r=mulberry32(seed),n1=makeNoise(r),n2=makeNoise(r);
  COAST=[];const hm=new Int16Array(W*D).fill(-1),kind=new Uint8Array(W*D);// 0 海 1 沙灘 2 草地 3 鹽山 4 固定平地
- const inPans=(x,y)=>x>=27&&x<=45&&((y>=4&&y<=27)||(y>=34&&y<=58));
- const inZone=(x,y)=>x>=9&&x<=25&&y>=16&&y<=40;
+ const nf=64/W;// 讓大地圖的起伏尺度和原本一樣
  for(let y=0;y<D;y++)for(let x=0;x<W;x++){const i=x+y*W;
-  const coast=51+Math.round((n1(y*.13,3.3)-.5)*8);COAST[y]=coast;
+  const coast=L.coast+Math.round((n1(y*.13*nf*W/64,3.3)-.5)*8);COAST[y]=coast;
   if(x>coast){kind[i]=0;continue}
   if(x>coast-6){hm[i]=4;kind[i]=1;continue}
-  if(inPans(x,y)||inZone(x,y)){hm[i]=4;kind[i]=4;continue}
-  let h=n2(x*.16,y*.16);h=4+Math.max(0,Math.round((h-.5)*9))+(x<16?Math.round((16-x)*.18):0);h=Math.min(h,10);
-  const mt=x<26?Math.min(13,Math.round(13.5-Math.hypot(x-11,y-50)*1.25)):0;
+  if(inRect(x,y,L.pans)||inRect(x,y,L.ponds)||inRect(x,y,L.zone)||inRect(x,y,L.wet)){hm[i]=4;kind[i]=4;continue}
+  let h=n2(x*.16,y*.16);h=4+Math.max(0,Math.round((h-.55)*9))+(x<L.hill?Math.round((L.hill-x)*.18):0);h=Math.min(h,10);
+  const mt=Math.min(13,Math.round(13.5-Math.hypot(x-L.mount[0],y-L.mount[1])*1.25));
   if(mt>h){hm[i]=mt;kind[i]=3}else{hm[i]=h;kind[i]=2}}
  // 坡度限制：相鄰地面高度差最多 1 格，走路就能上下
- for(let pass=0;pass<30;pass++){let ch=false;
+ for(let pass=0;pass<40;pass++){let ch=false;
   for(let y=0;y<D;y++)for(let x=0;x<W;x++){const i=x+y*W;if(hm[i]<0)continue;let m=99;
    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=W||Y>=D)continue;const j=X+Y*W;if(hm[j]>=0)m=Math.min(m,hm[j]+1)}
    if(hm[i]>m){hm[i]=m;ch=true}}
@@ -556,42 +627,32 @@ function genWorld(seed){
   for(let z=1;z<=h;z++){let b;if(kind[i]===1)b=z>=2?SAND:STONE;else if(kind[i]===3)b=z<=3?STONE:z===4?DIRT:SALT;else b=z===h?GRASS:z>=h-2?DIRT:STONE;setB(x,y,z,b)}}
  const clearCol=(x,y)=>{for(let z=1;z<H;z++)setB(x,y,z,AIR)};
  // 鹽田
- for(let y=4;y<=27;y++)for(let x=27;x<=45;x++){clearCol(x,y);const lx=x-27,ly=y-4;setB(x,y,1,STONE);setB(x,y,2,STONE);
+ {const[X0,X1,Y0,Y1]=L.pans;for(let y=Y0;y<=Y1;y++)for(let x=X0;x<=X1;x++){clearCol(x,y);const lx=x-X0,ly=y-Y0;setB(x,y,1,STONE);setB(x,y,2,STONE);
   if(lx%6===0||ly%6===0){setB(x,y,3,DIRT);setB(x,y,4,DIRT);}
-  else{setB(x,y,3,PAN);const pi=Math.floor(lx/6)+Math.floor(ly/6)*3;if(pi%3!==0)setB(x,y,4,WATER);else{setB(x,y,4,PAN);if(r()<.13)setB(x,y,5,SALT);}}}
+  else{setB(x,y,3,PAN);const pi=Math.floor(lx/6)+Math.floor(ly/6)*3;if(pi%3!==0)setB(x,y,4,WATER);else{setB(x,y,4,PAN);if(r()<.13)setB(x,y,5,SALT);}}}}
  // 魚塭
- for(let y=34;y<=58;y++)for(let x=27;x<=45;x++){clearCol(x,y);const lx=x-27,ly=y-34;setB(x,y,1,STONE);
-  if(lx%9===0||ly%8===0){setB(x,y,2,STONE);setB(x,y,3,DIRT);setB(x,y,4,GRASS);}else{setB(x,y,2,DIRT);setB(x,y,3,WATER);setB(x,y,4,WATER);}}
+ {const[X0,X1,Y0,Y1]=L.ponds;for(let y=Y0;y<=Y1;y++)for(let x=X0;x<=X1;x++){clearCol(x,y);const lx=x-X0,ly=y-Y0;setB(x,y,1,STONE);
+  if(lx%9===0||ly%8===0){setB(x,y,2,STONE);setB(x,y,3,DIRT);setB(x,y,4,GRASS);}else{setB(x,y,2,DIRT);setB(x,y,3,WATER);setB(x,y,4,WATER);}}}
  // ---- 北門水晶教堂：立在水池中，走白色步道抵達
- const base=4,xc=17,cx0=15,cx1=19,cy0=23,cy1=31;
- for(let y=19;y<=35;y++)for(let x=11;x<=23;x++){const curb=x===11||x===23||y===19||y===35;if(curb){setB(x,y,4,WHITE);continue}setB(x,y,3,DIRT);setB(x,y,4,WATER)}
- for(let y=cy0;y<=cy1;y++)for(let x=cx0;x<=cx1;x++){setB(x,y,3,STONE);setB(x,y,4,WHITE)}
- for(let y=cy1+1;y<=38;y++)for(let x=xc-1;x<=xc+1;x++){setB(x,y,3,STONE);setB(x,y,4,WHITE)}
- const WT=base+4;// 牆頂
- for(let z=base+1;z<=WT;z++)for(let y=cy0;y<=cy1;y++)for(let x=cx0;x<=cx1;x++){const edge=x===cx0||x===cx1||y===cy0||y===cy1;if(!edge)continue;
-  const corner=(x===cx0||x===cx1)&&(y===cy0||y===cy1);let w;
-  if(z===WT||corner)w=true;
-  else if(y===cy1)w=(z===base+4)||x===cx0||x===cx1;
-  else if(y===cy0)w=x===xc;
-  else w=(y-cy0)%3===0;
-  setB(x,y,z,w?WHITE:GLASS)}
- for(let dx=-1;dx<=1;dx++)for(let dz=1;dz<=3;dz++)setB(xc+dx,cy1,base+dz,AIR);
- // 陡峭的尖屋頂（每階兩格高）
- for(let k=0;k<=2;k++)for(let dz=0;dz<=1;dz++){const z=WT+1+k*2+dz,xa=cx0+k,xb=cx1-k;
-  for(let y=cy0;y<=cy1;y++){setB(xa,y,z,k===2?WHITE:GLASS);setB(xb,y,z,k===2?WHITE:GLASS)}
-  for(let x=xa;x<=xb;x++){const fr=x===xa||x===xb||x===xc;setB(x,cy0,z,fr?WHITE:GLASS);setB(x,cy1,z,fr?WHITE:GLASS)}}
- // 正面尖塔
- const apex=WT+6;for(let z=apex+1;z<=Math.min(H-2,apex+3);z++)setB(xc,cy1,z,WHITE);setB(xc,cy1,Math.min(H-1,apex+4),GLASS);
- // 室內：鹽燈、長椅
- setB(cx0+1,cy0+1,base+1,LAMP);setB(cx1-1,cy0+1,base+1,LAMP);
- for(const y of [cy0+3,cy0+5])for(const x of [cx0+1,cx1-1])setB(x,y,base+1,PLANK);
- setB(xc-2,37,base+1,TORCH);setB(xc+2,37,base+1,TORCH);
- SPAWN={x:xc+.5,y:cy1-1.5,z:base+1};
- const nearChurch=(x,y)=>x>=9&&x<=25&&y>=16&&y<=40;
+ const base=4,{xc,cy0}=L.ch;buildChurch(L,false);
+ SPAWN={x:xc+.5,y:cy0+4.5,z:base+1};
+ // ---- 頂山濕地與《山山山屋》：三座白色陶片拼貼的小鹽山
+ if(L.wet){const[X0,X1,Y0,Y1]=L.wet;
+  for(let y=Y0;y<=Y1;y++)for(let x=X0;x<=X1;x++){const edge=x===X0||x===X1||y===Y0||y===Y1;clearCol(x,y);setB(x,y,1,STONE);setB(x,y,2,DIRT);
+   const isl=n2(x*.35,y*.35)>.62;if(edge||isl){setB(x,y,3,DIRT);setB(x,y,4,edge?GRASS:DIRT)}else{setB(x,y,3,DIRT);setB(x,y,4,WATER)}}
+  const dx0=X0+4,dx1=X0+16,dy0=Y0+5,dy1=Y0+13;// 原賞鳥亭平台
+  for(let y=dy0;y<=dy1;y++)for(let x=dx0;x<=dx1;x++){setB(x,y,3,STONE);setB(x,y,4,PLANK);for(let z=5;z<H;z++)setB(x,y,z,AIR)}
+  for(let y=dy1+1;y<=Y1;y++)for(let x=dx0+4;x<=dx0+6;x++){setB(x,y,3,STONE);setB(x,y,4,PLANK)}// 棧道
+  buildSanshan(L,false)}
+ const nearChurch=(x,y)=>inRect(x,y,L.zone);
+ // ---- 野外白色石材：地表石堆＋地底礦脈
+ {const A2=W*D/4096;for(let i=0;i<14*A2;i++){const x=2+Math.floor(r()*(W-4)),y=2+Math.floor(r()*(D-4));if(nearChurch(x,y)||inRect(x,y,L.wet)||inRect(x,y,L.pans)||inRect(x,y,L.ponds))continue;const t=topZ(x,y);if(raw(x,y,t)!==GRASS||raw(x,y,t+1)!==AIR)continue;
+   setB(x,y,t,WHITE);const n=1+Math.floor(r()*3);for(let k=0;k<n;k++){const a=x+Math.floor(r()*3)-1,b=y+Math.floor(r()*3)-1;const tt=topZ(a,b);if(raw(a,b,tt)===GRASS&&raw(a,b,tt+1)===AIR)setB(a,b,tt+1,WHITE)}}
+  for(let i=0;i<60*A2;i++){const x=1+Math.floor(r()*(W-2)),y=1+Math.floor(r()*(D-2)),z=1+Math.floor(r()*4);for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++)if(raw(x+dx,y+dy,z)===STONE)setB(x+dx,y+dy,z,WHITE)}}
  // ---- 樹：木麻黃、椰子、黃槿、海茄苳
  const put=(x,y,z,id)=>{if(x>=0&&y>=0&&x<W&&y<D&&z<H&&raw(x,y,z)===AIR)setB(x,y,z,id)};
  const D4=[[1,0],[-1,0],[0,1],[0,-1]];
- const spaced=(x,y)=>{if(nearChurch(x,y))return false;for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++)for(let z=1;z<H;z++){const v=raw(x+dx,y+dy,z);if(v===LOG||v===15)return false}return true};
+ const spaced=(x,y)=>{if(nearChurch(x,y)||inRect(x,y,L.wet))return false;for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++)for(let z=1;z<H;z++){const v=raw(x+dx,y+dy,z);if(v===LOG||v===15)return false}return true};
  const casuarina=(x,y)=>{const b=topZ(x,y),tb=raw(x,y,b);if((tb!==GRASS&&tb!==SAND)||raw(x,y,b+1)!==AIR||!spaced(x,y))return;const th=5+Math.floor(r()*2);
   for(let z=b+1;z<=b+th;z++)setB(x,y,z,LOG);const t=b+th;put(x,y,t+1,LEAF);for(const[dx,dy]of D4){put(x+dx,y+dy,t,LEAF);if(r()<.45)put(x+dx,y+dy,t-2,LEAF)}};
  const palm=(x,y)=>{const b=topZ(x,y);if(raw(x,y,b)!==SAND||raw(x,y,b+1)!==AIR||!spaced(x,y))return;const th=4+Math.floor(r()*3);
@@ -599,26 +660,58 @@ function genWorld(seed){
  const hibiscus=(x,y)=>{const b=topZ(x,y);if(raw(x,y,b)!==GRASS||raw(x,y,b+1)!==AIR||!spaced(x,y))return;const th=2+Math.floor(r()*2);
   for(let z=b+1;z<=b+th;z++)setB(x,y,z,LOG);const t=b+th;for(let dz=0;dz<=1;dz++)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){if(dz===1&&Math.abs(dx)+Math.abs(dy)===2)continue;if(dz===0&&dx===0&&dy===0)continue;put(x+dx,y+dy,t+dz,17)}put(x,y,t+1,17);put(x,y,t+2,17)};
  const mangrove=(x,y)=>{const b=topZ(x,y);if(raw(x,y,b+1)!==AIR||!spaced(x,y))return;setB(x,y,b+1,LOG);for(const[dx,dy]of D4)put(x+dx,y+dy,b+2,18);put(x,y,b+2,18);put(x,y,b+3,18)};
- for(let y=1;y<D-1;y+=3){const cx=COAST[y]-7;if(!(y>=3&&y<=28&&cx>=26&&cx<=46)&&!(y>=33&&y<=59&&cx>=26&&cx<=46))casuarina(cx,y)}
+ for(let y=1;y<D-1;y+=3){const cx=COAST[y]-7;if(!inRect(cx,y,L.pans)&&!inRect(cx,y,L.ponds))casuarina(cx,y)}
  for(let y=1;y<D-1;y++)for(let x=COAST[y]-5;x<COAST[y];x++)if(r()<.05)palm(x,y);
- for(let i=0;i<30;i++)casuarina(1+Math.floor(r()*(W-2)),1+Math.floor(r()*(D-2)));
- for(let i=0;i<40;i++)hibiscus(1+Math.floor(r()*(W-2)),1+Math.floor(r()*(D-2)));
- for(let y=35;y<=57;y++)for(let x=28;x<=44;x++){const t=topZ(x,y);if(raw(x,y,t)===GRASS&&nearWater(x,y,t)&&r()<.06)mangrove(x,y)}
+ const A=W*D/4096;
+ for(let i=0;i<30*A;i++)casuarina(1+Math.floor(r()*(W-2)),1+Math.floor(r()*(D-2)));
+ for(let i=0;i<34*A;i++)hibiscus(1+Math.floor(r()*(W-2)),1+Math.floor(r()*(D-2)));
+ {const[X0,X1,Y0,Y1]=L.ponds;for(let y=Y0+1;y<Y1;y++)for(let x=X0+1;x<X1;x++){const t=topZ(x,y);if(raw(x,y,t)===GRASS&&nearWater(x,y,t)&&r()<.06)mangrove(x,y)}}
  // ---- 蚵殼
  for(let y=0;y<D;y++)for(let x=COAST[y]-5;x<=COAST[y];x++)if(r()<.03){const b=topZ(x,y);if(raw(x,y,b)===SAND&&raw(x,y,b+1)===AIR)setB(x,y,b+1,OYSTER)}
  // ---- 雲嘉南野花
  for(let y=0;y<D;y++)for(let x=0;x<W;x++){if(nearChurch(x,y))continue;const t=topZ(x,y),tb=raw(x,y,t);if(raw(x,y,t+1)!==AIR)continue;const q=r();
-  if(tb===SAND){if(q<.07)setB(x,y,t+1,19);else if(q<.09)setB(x,y,t+1,22);else if(q<.1)setB(x,y,t+1,20)}
-  else if(tb===GRASS){if(q<.035)setB(x,y,t+1,21);else if(q<.05)setB(x,y,t+1,20);else if(q<.056)setB(x,y,t+1,22)}
-  else if((tb===DIRT||tb===PAN)&&inRegion(x,y,27,4,45,27)){if(q<.1)setB(x,y,t+1,23)}}
- rebuildLights();rebuildCrops();
+  if(tb===SAND){if(q<.07)setB(x,y,t+1,19);else if(q<.09)setB(x,y,t+1,22);else if(q<.1)setB(x,y,t+1,20);else if(q<.125)setB(x,y,t+1,44)}
+  else if(tb===GRASS){if(q<.1)setB(x,y,t+1,43);else if(q<.14)setB(x,y,t+1,21);else if(q<.158)setB(x,y,t+1,20);else if(q<.166)setB(x,y,t+1,22);else if(q<.184)setB(x,y,t+1,45)}
+  else if((tb===DIRT||tb===PAN)&&(inRect(x,y,L.pans)||inRect(x,y,L.wet))){if(q<.1)setB(x,y,t+1,23)}}
+ rebuildLights();rebuildCrops();if(typeof rebuildSaplings==='function')rebuildSaplings();
 }
 let SPAWN={x:20,y:30,z:6};
 
 /* ================= 野花（雲嘉南海岸植物） ================= */
-const isPlant=id=>id>=19&&id<=23;
+const isPlant=id=>(id>=19&&id<=23)||(id>=43&&id<=45)||isSculpt(id);
+const isSculpt=id=>id>=51&&id<=56;
 const isDoor=id=>id===26||id===27;
-function drawPlant(c,cx,by,id,sw){const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(cx+x),Math.round(by+y),w,h)};const s=Math.round(sw||0);
+function drawSculpt(c,cx,by,id){const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(cx+x),Math.round(by+y),w,h)};
+ const O=(x,y,r,col,r2)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const d=Math.hypot(i,j);if(d<=r+.3&&!(r2&&d<=r2))R(x+i,y+j,1,1,col)}};
+ const TRI=(x,y,h,w,col,col2)=>{for(let k=0;k<h;k++){const ww=Math.max(1,Math.round(w*(k+1)/h));R(x-Math.floor(ww/2),y+k,ww,1,col);if(col2)R(x-Math.floor(ww/2),y+k,1,1,col2)}};
+ const TEAL='#2fa3ad',TEALD='#1f7a84',YEL='#ffcb3a',YELD='#d99a1a',GR='#6f7880',WHT='#f6f8f9',SH='#c9d1d6';
+ if(id===51){// 日月小樹：黃三角＋藍綠枝＋太陽圓圈與月牙
+  R(-1,-17,2,17,TEAL);R(0,-17,1,17,TEALD);R(-7,-8,6,2,TEAL);R(1,-8,6,2,TEAL);R(-7,-12,2,4,TEAL);R(5,-12,2,4,TEAL);
+  O(-6,-15,3,YEL,1.2);R(-6,-15,1,1,TEALD);O(6,-15,3,YEL);O(7,-16,2,'rgba(0,0,0,0)');c.clearRect(Math.round(cx+5),Math.round(by-18),3,3);R(4,-13,1,1,YELD);
+  TRI(0,-25,8,9,YEL,YELD)}
+ else if(id===52){// 橘色鹽花：橘紅花托＋三顆黃色花苞
+  R(0,-6,1,6,GR);O(0,-9,4,'#f06a3e');R(-4,-13,9,3,'rgba(0,0,0,0)');c.clearRect(Math.round(cx-4),Math.round(by-14),9,2);R(-4,-12,2,2,'#f06a3e');R(-1,-12,3,2,'#f06a3e');R(3,-12,2,2,'#f06a3e');R(-3,-8,7,1,'#c8462a');
+  for(const[x,h]of[[-3,4],[0,6],[3,4]]){R(x,-12-h,1,h,'#e05a30');O(x,-13-h,1.4,YEL);R(x,-14-h,1,1,'#fff1a8')}}
+ else if(id===53){// 帆船鳥：藍綠船身、深灰雙帆、魚尾
+  R(-3,-5,1,5,GR);R(2,-5,1,5,GR);
+  for(let k=0;k<6;k++){const w=16-Math.round(k*k*.35);R(-8+Math.round(k*k*.18),-6-5+k,w,1,k<2?'#5fd0d8':TEAL)}R(-8,-11,16,1,'#86e2e8');R(-9,-10,2,2,TEALD);
+  R(8,-12,2,2,'#4a5560');R(10,-14,2,2,'#4a5560');R(10,-10,2,2,'#4a5560');R(12,-15,1,2,'#4a5560');R(12,-9,1,2,'#4a5560');R(4,-9,1,1,'#123');
+  for(let k=0;k<11;k++){R(-4,-12-k,Math.max(1,Math.round((11-k)*.55)),1,k%3?'#5a6670':'#6f7c86');R(-5,-12-k,1,1,'#3a444c')}
+  for(let k=0;k<8;k++){R(1,-12-k,Math.max(1,Math.round((8-k)*.6)),1,'#7c8892')}R(0,-22,1,10,'#3a444c')}
+ else if(id===54){// 綠芽黃花：一根綠莖、對生葉、頂端黃花
+  R(0,-20,1,20,'#3f9a45');for(let k=0;k<5;k++){const y=-4-k*3.4;R(-3,y,3,2,'#5fc05a');R(-4,y-1,1,1,'#5fc05a');R(1,y-1,3,2,'#4fae4a');R(4,y-2,1,1,'#4fae4a')}
+  O(0,-23,2.5,YEL);R(-1,-24,1,1,'#fff1a8');R(0,-23,1,1,YELD)}
+ else if(id===55){// 飛翔白鷺：細桿上的白色鳥，翅膀上揚、深灰長喙
+  R(0,-8,1,8,GR);for(let k=0;k<5;k++)R(-6+k,-12+Math.floor(k/2),10-k,1,k?WHT:SH);R(-6,-12,12,4,WHT);R(-5,-9,10,1,SH);
+  for(let k=0;k<7;k++)R(-4+Math.floor(k/3),-13-k,4,1,k%2?WHT:'#eef2f4');R(-4,-19,1,6,SH);
+  R(5,-14,3,3,WHT);R(6,-14,1,1,'#222');R(8,-13,5,1,'#4a5560');R(-10,-11,4,1,'#4a5560');R(-12,-11,2,1,'#4a5560')}
+ else if(id===56){// 積木小屋：藍綠方塊＋黃色小房子
+  R(-5,-5,1,5,GR);R(3,-5,1,5,GR);
+  const BX=(x,y,s)=>{R(x,y,s,s,TEAL);R(x,y+s-1,s,1,TEALD);R(x+1,y+1,s-2,s-2,'#5fc9d0');R(x+2,y+2,s-4,s-4,TEAL)};
+  BX(-8,-11,6);BX(-8,-17,6);BX(-2,-11,6);
+  R(1,-22,6,11,YEL);R(1,-12,6,1,YELD);R(3,-17,2,3,'#c98a1a');TRI(4,-27,5,10,TEAL,TEALD);R(-6,-21,5,4,TEAL);R(-5,-20,3,2,'#5fc9d0')}
+}
+function drawPlant(c,cx,by,id,sw){if(isSculpt(id)){drawSculpt(c,cx,by,id);return}const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(cx+x),Math.round(by+y),w,h)};const s=Math.round(sw||0);
  if(id===19){// 馬鞍藤：沙灘上匍匐的紫紅喇叭花
   R(-7,-2,14,2,'#3f8f3a');R(-5,-3,3,1,'#4fa648');R(2,-3,4,1,'#4fa648');R(-8,-1,2,1,'#3f8f3a');R(6,-1,2,1,'#3f8f3a');
   R(-4+s,-6,3,2,'#d94fa3');R(-3+s,-5,1,1,'#f6c6e0');R(3,-5,3,2,'#d94fa3');R(4,-4,1,1,'#f6c6e0')}
@@ -632,6 +725,15 @@ function drawPlant(c,cx,by,id,sw){const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fill
  else if(id===22){// 蔓荊：灰綠矮叢＋藍紫小花
   R(-6,-4,12,4,'#7fa38a');R(-4,-6,8,2,'#7fa38a');R(-5,-3,2,1,'#5d8068');R(2,-2,3,1,'#5d8068');R(-1,-5,2,1,'#93b89d');
   R(-4+s,-7,2,1,'#7b6fd6');R(1+s,-8,2,2,'#7b6fd6');R(4,-5,1,1,'#9b8ff0');R(-6,-5,1,1,'#9b8ff0')}
+ else if(id===43){// 野草叢
+  const cs=['#2f7a2c','#9be07a','#3f8a35','#b5ec8a'];for(let i=0;i<7;i++){const x=-5+i*1.6,h=5+((i*5)%4);R(x+(i%2?s:0),-h,1,h,cs[i%4]);R(x+(i%2?s:0),-h,1,1,i%2?'#d8f5b0':'#5fb04a')}}
+ else if(id===44){// 林投：放射狀的長刺葉＋橘色果實
+  const L2=(x0,y0,x1,y1,col)=>{const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));for(let k=0;k<=n;k++)R(x0+(x1-x0)*k/n,y0+(y1-y0)*k/n,1,1,col)};
+  L2(0,-2,-7+s,-8,'#3f7a35');L2(0,-2,-4+s,-11,'#4f8f3a');L2(0,-2,0+s,-12,'#3f7a35');L2(0,-2,4+s,-11,'#4f8f3a');L2(0,-2,7+s,-8,'#3f7a35');L2(0,-2,-6,-4,'#4f8f3a');L2(0,-2,6,-4,'#4f8f3a');
+  R(0,-4,1,4,'#7a5a3a');R(-2,-7,4,3,'#ff9a3c');R(-1,-8,2,1,'#ffb866');R(-1,-6,1,1,'#d9762a');R(1,-5,1,1,'#d9762a')}
+ else if(id===45){// 草海桐：圓圓的灌木＋白色半邊花
+  R(-6,-5,12,5,'#3f8f3a');R(-4,-7,8,2,'#4f9a45');R(-3,-6,3,1,'#6fc35a');R(2,-4,3,1,'#6fc35a');
+  for(const[x,y]of[[-4,-6],[1,-7],[3,-4],[-2,-3],[5,-2]]){R(x,y,2,1,'#ffffff');R(x,y+1,1,1,'#f2e6f2')}}
  else if(id===23){// 海馬齒：鹽田邊的紅綠多肉
   const cols=['#c84a5a','#6fa04a','#d86a6a','#7fb05a'];for(let i=0;i<7;i++){R(-7+i*2,-1-(i%2),2,2,cols[i%4])}R(-3,-3,2,1,'#c84a5a');R(2,-3,2,1,'#6fa04a');R(0,-4,1,1,'#ff7fbf');R(-5,-3,1,1,'#ff7fbf')}
 }
@@ -669,10 +771,10 @@ function playerSpr(id,back,fr){const k=[id,back,fr,eq.head,eq.face,eq.body].join
 
 /* ================= 寵物 & 野生動物 ================= */
 const PETS={
- fiddler:{n:'招潮蟹',rounds:1,zone:18,mspd:105,flee:3,perk:'夜晚會幫你夾附近的怪物',where:'海邊沙灘、魚塭堤岸'},
- stilt:{n:'高蹺鴴',rounds:2,zone:13,mspd:125,flee:3.4,perk:'曬鹽時有機會多 1 塊鹽',where:'有水的鹽田'},
- mudskipper:{n:'彈塗魚',rounds:3,zone:10,mspd:145,flee:3.8,perk:'釣魚成功率 +25%',where:'魚塭堤岸邊'},
- buffalo:{n:'水牛',rounds:2,zone:14,mspd:115,flee:2.6,mount:true,perk:'坐騎！帶在身邊後按 R（手機按「騎」）騎上去，跑得快、還能涉水',where:'內陸草地'},
+ fiddler:{n:'招潮蟹',rounds:2,zone:18,mspd:105,flee:3,perk:'夜晚會幫你夾附近的怪物',where:'海邊沙灘、魚塭堤岸'},
+ stilt:{n:'高蹺鴴',rounds:3,zone:13,mspd:125,flee:3.4,perk:'曬鹽時有機會多 1 塊鹽',where:'有水的鹽田'},
+ mudskipper:{n:'彈塗魚',rounds:4,zone:10,mspd:145,flee:3.8,perk:'釣魚成功率 +25%',where:'魚塭堤岸邊'},
+ buffalo:{n:'水牛',rounds:3,zone:14,mspd:115,flee:2.6,mount:true,perk:'坐騎！帶在身邊後按 R（手機按「騎」）騎上去，跑得快、還能涉水',where:'內陸草地'},
 };
 let animals=[],baits=[],pets=[],activePet=-1,petEnt=null,catchMG=null,aniT=4;
 function drawAnimal(type,f){
@@ -690,7 +792,7 @@ function drawAnimal(type,f){
   gline(g,16,10,20,9,H);gline(g,16,11,20,10,H);gline(g,20,9,21,6,H);gline(g,21,10,22,6,H);gs(g,21,5,H2);gs(g,22,5,H2);gs(g,22,4,H2);
   gline(g,6,10,16,10,K);gline(g,7,9,15,9,K);
   // 半瞇的眼睛（厭世臉）
-  grect(g,7,13,3,1,'#ffffff');grect(g,13,13,3,1,'#ffffff');gs(g,9,13,'#000');gs(g,15,13,'#000');gline(g,7,12,9,12,'#000');gline(g,13,12,15,12,'#000');gs(g,6,12,K2);gs(g,16,12,K2);
+  const EW='#f2f2f2',LID='#0e0e10';grect(g,6,13,4,3,EW);grect(g,13,13,4,3,EW);grect(g,7,13,2,2,'#000');grect(g,14,13,2,2,'#000');gs(g,7,13,'#3a3a3a');gs(g,14,13,'#3a3a3a');gline(g,5,12,10,12,LID);gline(g,12,12,17,12,LID);gs(g,5,13,LID);gs(g,17,13,LID);
   // 鼻子與金色鼻環
   grect(g,8,16,7,2,K2);gs(g,9,16,'#111');gs(g,13,16,'#111');
   gs(g,9,18,GOLD);gs(g,9,19,GOLD);gs(g,10,20,GOLD);gs(g,11,20,GOLD);gs(g,12,20,GOLD);gs(g,13,19,GOLD);gs(g,13,18,GOLD);gs(g,10,20,'#c9a000');
@@ -708,20 +810,25 @@ function drawAnimal(type,f){
 const ASPR={};const aniSpr=(t,f)=>ASPR[t+f]||(ASPR[t+f]=drawAnimal(t,f));
 function inRegion(x,y,x0,y0,x1,y1){return x>=x0&&x<=x1&&y>=y0&&y<=y1}
 function nearWater(x,y,z){return raw(x+1,y,z)===WATER||raw(x-1,y,z)===WATER||raw(x,y+1,z)===WATER||raw(x,y-1,z)===WATER}
-function spawnAnimal(){const types=['fiddler','fiddler','stilt','mudskipper','buffalo'];const type=types[Math.floor(Math.random()*types.length)];
- if(animals.filter(a=>a.type===type).length>=(type==='buffalo'?1:2))return;
+const SPECIES=['fiddler','stilt','mudskipper','buffalo'],SPCAP={fiddler:3,stilt:2,mudskipper:2,buffalo:1},ANI_MAX=8;
+function pickSpecies(){const cnt={};for(const k of SPECIES)cnt[k]=animals.filter(a=>a.type===k).length;const total=animals.length;if(total>=ANI_MAX)return null;
+ const missing=SPECIES.filter(k=>cnt[k]===0);
+ const cand=SPECIES.filter(k=>cnt[k]<SPCAP[k]&&(cnt[k]===0||total+missing.length<ANI_MAX));// 每種保留 1 個名額
+ if(!cand.length)return null;const miss=cand.filter(k=>cnt[k]===0);if(miss.length&&Math.random()<.65)return miss[Math.floor(Math.random()*miss.length)];
+ const w=cand.map(k=>k==='fiddler'?3:k==='buffalo'?1.2:2);let q=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<cand.length;i++){q-=w[i];if(q<=0)return cand[i]}return cand[0]}
+function spawnAnimal(){const type=pickSpecies();if(!type)return;
  for(let k=0;k<40;k++){const x=Math.floor(Math.random()*W),y=Math.floor(Math.random()*D);if(Math.hypot(x-player.x,y-player.y)<9)continue;
   let z=-1;const t=topZ(x,y);
-  if(type==='stilt'){if(raw(x,y,4)===WATER&&raw(x,y,3)===PAN)z=4}
-  else if(type==='buffalo'){if(raw(x,y,t)===GRASS&&raw(x,y,t+1)===AIR&&raw(x,y,t+2)===AIR&&!(x>=9&&x<=25&&y>=16&&y<=40)&&x<COAST[y]-7)z=t+1}
-  else if(type==='mudskipper'){if(inRegion(x,y,27,34,45,58)&&raw(x,y,t)===GRASS&&nearWater(x,y,t))z=t+1}
-  else{const tb=raw(x,y,t);if(raw(x,y,t+1)===AIR&&(tb===SAND||(inRegion(x,y,27,34,45,58)&&tb===GRASS&&nearWater(x,y,t))))z=t+1}
+  if(type==='stilt'){if(raw(x,y,4)===WATER&&(raw(x,y,3)===PAN||(inRect(x,y,L.wet)&&raw(x,y,3)===DIRT)))z=4}
+  else if(type==='buffalo'){if(raw(x,y,t)===GRASS&&raw(x,y,t+1)===AIR&&raw(x,y,t+2)===AIR&&!inRect(x,y,L.zone)&&!inRect(x,y,L.wet)&&x<COAST[y]-7)z=t+1}
+  else if(type==='mudskipper'){if(inRect(x,y,L.ponds)&&raw(x,y,t)===GRASS&&nearWater(x,y,t))z=t+1}
+  else{const tb=raw(x,y,t);if(raw(x,y,t+1)===AIR&&(tb===SAND||(inRect(x,y,L.ponds)&&tb===GRASS&&nearWater(x,y,t))))z=t+1}
   if(z<0)continue;
   animals.push({kind:'ani',type,x:x+.5,y:y+.5,z,vz:0,onGround:false,r:type==='buffalo'?.45:.25,h:type==='stilt'?1.1:type==='buffalo'?1.2:.5,home:{x:x+.5,y:y+.5},wt:0,tx:x+.5,ty:y+.5,flee:0,eat:0,full:0,anim:0,fx:-1,fy:1,sink:true,moving:false});
   if(!G.announced[type]){G.announced[type]=1;if(Math.hypot(x-player.x,y-player.y)<26)logMsg(`附近出現了${PETS[type].n}！拿捕捉網、按住 Shift 躡手躡腳靠近`)}
   return}}
 function updateAnimals(dt){
- if(!G.night){aniT-=dt;if(aniT<=0){aniT=7+Math.random()*6;if(animals.length<5)spawnAnimal()}}
+ if(!G.night){aniT-=dt;if(aniT<=0){aniT=5+Math.random()*5;if(animals.length<ANI_MAX)spawnAnimal()}}
  const p=player;
  for(const a of animals){a.anim+=dt;
   if(G.night&&Math.random()<dt*.3){a.dead=true;continue}
@@ -757,6 +864,8 @@ const petActive=t=>petEnt&&petEnt.type===t;
 function startCatch(a){const d=Math.hypot(a.x-player.x,a.y-player.y);
  if(held()!==116){a.flee=1.8;logMsg('要拿著「捕捉網」才抓得到喔！（背包 E 可以合成）');return}
  if(d>2.8){logMsg('再靠近一點……（按住 Shift 躡手躡腳）');return}
+ if(!inv[160]){a.flee=1.2;logMsg('需要「寵物飼料」才能抓寵物（背包 E 合成：野草叢＋黃豆種子）');return}
+ removeItem(160);logMsg('丟出 1 份寵物飼料……');
  const P=PETS[a.type];let zw=P.zone*(a.eat>0?1.6:1)*(eq.head===111?1.3:1);
  catchMG={a,round:0,pos:0,dir:1,zw,zc:20+Math.random()*60,spd:P.mspd,t:0};AU.play('select');mouse.left=false}
 function resolveCatch(){const M=catchMG;if(!M||M.t<.15)return;const P=PETS[M.a.type];
@@ -778,7 +887,7 @@ function doorGroup(x,y,z){const out=[],seen=new Set(),st=[[x,y,z]];while(st.leng
 function toggleDoor(x,y,z){const id=raw(x,y,z);if(!isDoor(id))return false;if(!reachOK(x,y,z)){logMsg('太遠了，靠近一點');return true}
  const grp=doorGroup(x,y,z);const open=id===26;if(!open){for(const[a,b,c]of grp)if(entInCell(a,b,c)){logMsg('門口有東西擋著，關不起來');return true}}
  for(const[a,b,c]of grp)setB(a,b,c,open?27:26);AU.play(open?'dooro':'doorc');return true}
-function lightCovers(x,y){for(const i of lights){const lx=i%W+.5,ly=Math.floor(i/W)%D+.5;const r=world[i]===LAMP?7:5;const dx=x-lx,dy=y-ly;if(dx*dx+dy*dy<r*r)return true}return false}
+function lightCovers(x,y){if(typeof npcLightCovers==='function'&&npcLightCovers(x,y))return true;for(const i of lights){const lx=i%W+.5,ly=Math.floor(i/W)%D+.5;const r=world[i]===LAMP?7:5;const dx=x-lx,dy=y-ly;if(dx*dx+dy*dy<r*r)return true}return false}
 
 /* ================= 農田種植 ================= */
 const FARM=28,FARM_WET=29;
@@ -789,7 +898,7 @@ let crops=new Set();
 function rebuildCrops(){crops.clear();for(const k of [...cropProg.keys()])if(!isCrop(world[k]))cropProg.delete(k);for(let i=0;i<world.length;i++)if(isCrop(world[i]))crops.add(i)}
 function waterNear(x,y,z){for(let dx=-3;dx<=3;dx++)for(let dy=-3;dy<=3;dy++)for(let dz=-1;dz<=0;dz++)if(raw(x+dx,y+dy,z+dz)===WATER)return true;return false}
 let cropT=0,cropProg=new Map();
-const DAYLIGHT=480*(13/24);// 一個白天約 260 秒（遊戲時間 05:40–18:40）
+const DAYLIGHT=600*(13/24);// 一個白天約 260 秒（遊戲時間 05:40–18:40）
 function cropNeed(i,wet){const f=1+hash(i,7,3)*.15;return (wet?DAYLIGHT:DAYLIGHT*1.6)*f}
 function updateCrops(dt){cropT+=dt;if(cropT<1)return;const step=cropT;cropT=0;
  if(G.night){if(crops.size&&!G.announced.cropNight){G.announced.cropNight=1;logMsg('天黑了，田裡的作物會停止生長，天亮再繼續長')}return}
@@ -828,8 +937,121 @@ function drawCrop(c,cx,by,id,sw){const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillR
    if(st===2)P(1,-3,2,2,'#cfe08a');
    if(st===3){P(-2,-5,6,5,'#d9e3a0');P(-1,-6,4,1,'#d9e3a0');P(-1,-4,1,3,'#b0bd6c');P(1,-5,1,4,'#b0bd6c');P(3,-3,1,2,'#b0bd6c');P(-2,-3,6,1,'#b0bd6c');P(0,-6,1,1,'#f2f7cf')}}}}
 
+/* ================= 裝飾用小動物（不能互動） ================= */
+let critters=[],critT=0;
+function spawnCritter(){const p=player;
+ for(let k=0;k<10;k++){const a=Math.random()*Math.PI*2,d=5+Math.random()*12;const x=Math.floor(p.x+Math.cos(a)*d),y=Math.floor(p.y+Math.sin(a)*d);
+  if(x<1||y<1||x>=W-1||y>=D-1)continue;const t=topZ(x,y),tb=raw(x,y,t),above=raw(x,y,t+1);if(above!==AIR&&!isPlant(above))continue;
+  let type=null;
+  if(G.night){if(tb===GRASS&&Math.random()<.8)type='firefly';}
+  else if(tb===GRASS)type=Math.random()<.55?'sparrow':'butterfly';
+  else if(tb===SAND)type='hermit';
+  else if(tb===WATER||nearWater(x,y,t))type='dragonfly';
+  if(!type)continue;
+  const fly=type==='butterfly'||type==='dragonfly'||type==='firefly';
+  critters.push({crit:true,type,x:x+.5,y:y+.5,z:t+1+(fly?.9+Math.random()*.6:0),vx:0,vy:0,t:Math.random()*5,wait:0,col:['#ffd23f','#ffffff','#ff9ad5','#7cc8ff'][Math.floor(Math.random()*4)],flee:false});return}}
+function updateCritters(dt){const p=player;critT-=dt;
+ if(critT<=0){critT=.8;if(critters.length<14)spawnCritter()}
+ for(const c of critters){c.t+=dt;const dx=c.x-p.x,dy=c.y-p.y,d=Math.hypot(dx,dy);
+  if(d>24||(c.type==='firefly'&&!G.night)||(c.type!=='firefly'&&G.night&&c.type!=='hermit')){c.dead=true;continue}
+  if(!c.flee&&d<(c.type==='hermit'?1.2:2.4)&&c.type!=='firefly'){c.flee=true;c.vx=dx/(d||1)*4;c.vy=dy/(d||1)*4}
+  if(c.flee){c.x+=c.vx*dt;c.y+=c.vy*dt;if(c.type==='hermit'){c.vx*=.9;c.vy*=.9;if(Math.hypot(c.vx,c.vy)<.2)c.flee=false}else{c.z+=3*dt;if(c.t>60||c.z>p.z+9)c.dead=true}continue}
+  if(c.type==='sparrow'){c.wait-=dt;if(c.wait<=0){c.wait=.6+Math.random()*1.4;const a=Math.random()*Math.PI*2;c.vx=Math.cos(a)*1.2;c.vy=Math.sin(a)*1.2;c.hop=.35}
+   if(c.hop>0){c.hop-=dt;c.x+=c.vx*dt;c.y+=c.vy*dt}c.z=topZ(Math.floor(c.x),Math.floor(c.y))+1+(c.hop>0?Math.sin(c.hop/.35*Math.PI)*.25:0)}
+  else if(c.type==='hermit'){c.wait-=dt;if(c.wait<=0){c.wait=1+Math.random()*2;const a=Math.random()*Math.PI*2;c.vx=Math.cos(a)*.25;c.vy=Math.sin(a)*.25}c.x+=c.vx*dt;c.y+=c.vy*dt;c.z=topZ(Math.floor(c.x),Math.floor(c.y))+1}
+  else{const sp=c.type==='dragonfly'?(Math.sin(c.t*.9)>.6?3:.3):c.type==='firefly'?.35:.8;c.x+=Math.cos(c.t*.7+c.col.length)*sp*dt;c.y+=Math.sin(c.t*.53)*sp*dt;
+   const g=topZ(Math.floor(c.x),Math.floor(c.y))+1;c.z+=(g+1+Math.sin(c.t*2)*.3-c.z)*Math.min(1,dt*2)}
+  c.x=clamp(c.x,1,W-1);c.y=clamp(c.y,1,D-1)}
+ critters=critters.filter(c=>!c.dead)}
+function drawCritter(c){const s=scr(c.x,c.y,c.z);const X=Math.floor(s.x),Y=Math.floor(s.y);const R=(x,y,w,h,col)=>{ctx.fillStyle=col;ctx.fillRect(X+x,Y+y,w,h)};const f=Math.floor(c.t*10)%2;
+ if(c.type==='sparrow'){R(-2,-4,4,3,'#8a6a45');R(-1,-5,2,1,'#6e5236');R(2,-4,1,1,'#3a2a1a');R(-3,-3,1,1,'#6e5236');R(-1,-2,2,1,'#d9c8a8');R(-1,-1,1,1,'#c94a2a')}
+ else if(c.type==='butterfly'){const w=f?2:1;R(-w-1,-3,w,2,c.col);R(1,-3,w,2,c.col);R(0,-3,1,3,'#333')}
+ else if(c.type==='hermit'){R(-2,-3,4,3,'#d9b56a');R(-1,-4,2,1,'#c49a50');R(1,-2,1,1,'#ff5e2c');R(2,-1,1,1,'#ff5e2c');R(-2,-1,1,1,'#ff5e2c')}
+ else if(c.type==='dragonfly'){R(-3,-2,7,1,'#4b9bea');R(-1,-3,1,1,f?'#e8f6ff':'#bfe6ff');R(1,-3,1,1,f?'#bfe6ff':'#e8f6ff');R(-1,-1,1,1,'#bfe6ff');R(1,-1,1,1,'#bfe6ff');R(3,-2,1,1,'#1f5aa0')}
+ else if(c.type==='firefly'){R(0,-2,1,1,'#3a3a20')}}
+function drawFireflies(){if(!G.night)return;ctx.save();ctx.globalCompositeOperation='lighter';for(const c of critters){if(c.type!=='firefly')continue;const s=scr(c.x,c.y,c.z);const on=Math.sin(c.t*3+c.x)>-.2;if(!on)continue;
+ const g=ctx.createRadialGradient(s.x,s.y-2,0,s.x,s.y-2,6);g.addColorStop(0,'rgba(220,255,120,.9)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(s.x-6,s.y-8,12,12);ctx.fillStyle='#f4ffb0';ctx.fillRect(Math.floor(s.x),Math.floor(s.y)-2,1,1)}ctx.restore()}
+
+/* ================= 樹苗：種下去會長成大樹 ================= */
+const isSapling=id=>id>=46&&id<=49;
+const SAP={46:{n:'木麻黃',leaf:LEAF},47:{n:'椰子',leaf:16},48:{n:'黃槿',leaf:17},49:{n:'海茄苳',leaf:18}};
+const LEAF2SAP={7:46,16:47,17:48,18:49};
+let saplings=new Set(),sapProg=new Map(),sapT=0;
+function rebuildSaplings(){saplings.clear();for(let i=0;i<world.length;i++)if(isSapling(world[i]))saplings.add(i);for(const k of [...sapProg.keys()])if(!saplings.has(k))sapProg.delete(k)}
+function growTree(id,x,y,b){const put=(X,Y,Z,v)=>{if(X>=0&&Y>=0&&X<W&&Y<D&&Z<H){const c=raw(X,Y,Z);if(c===AIR||isPlant(c))setB(X,Y,Z,v)}};const D4=[[1,0],[-1,0],[0,1],[0,-1]];const R=Math.random;
+ if(id===46){const th=5+Math.floor(R()*2);for(let z=b+1;z<=b+th;z++)setB(x,y,z,LOG);const t=b+th;put(x,y,t+1,LEAF);for(const[dx,dy]of D4){put(x+dx,y+dy,t,LEAF);if(R()<.45)put(x+dx,y+dy,t-2,LEAF)}}
+ else if(id===47){const th=4+Math.floor(R()*3);for(let z=b+1;z<=b+th;z++)setB(x,y,z,15);const t=b+th;put(x,y,t+1,16);for(const[dx,dy]of D4){put(x+dx,y+dy,t+1,16);put(x+2*dx,y+2*dy,t,16)}}
+ else if(id===48){const th=2+Math.floor(R()*2);for(let z=b+1;z<=b+th;z++)setB(x,y,z,LOG);const t=b+th;for(let dz=0;dz<=1;dz++)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){if(dz===1&&Math.abs(dx)+Math.abs(dy)===2)continue;if(dz===0&&dx===0&&dy===0)continue;put(x+dx,y+dy,t+dz,17)}put(x,y,t+1,17);put(x,y,t+2,17)}
+ else{setB(x,y,b+1,LOG);for(const[dx,dy]of D4)put(x+dx,y+dy,b+2,18);put(x,y,b+2,18);put(x,y,b+3,18)}}
+function treeHeight(id){return id===46?8:id===47?8:id===48?5:4}
+function updateSaplings(dt){sapT+=dt;if(sapT<1)return;const step=sapT;sapT=0;if(G.night)return;
+ for(const i of saplings){const id=world[i];if(!isSapling(id)){saplings.delete(i);sapProg.delete(i);continue}
+  const x=i%W,y=Math.floor(i/W)%D,z=Math.floor(i/(W*D));if(!solidAt(x,y,z-1)){world[i]=AIR;saplings.delete(i);continue}
+  const need=DAYLIGHT*1.5*(1+hash(i,11,5)*.3);const pr=(sapProg.get(i)||0)+step;sapProg.set(i,pr);if(pr<need)continue;
+  let ok=true;for(let k=1;k<treeHeight(id);k++){const c=raw(x,y,z+k);if(c!==AIR&&!isPlant(c)){ok=false;break}}if(!ok)continue;
+  world[i]=AIR;saplings.delete(i);sapProg.delete(i);placed.delete(i);growTree(id,x,y,z-1);for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++)for(let dz=0;dz<10;dz++){const v=raw(x+dx,y+dy,z+dz);if(v===LOG||v===15||v===LEAF||(v>=16&&v<=18))placed.add(IX(x+dx,y+dy,z+dz))}if(Math.hypot(x-player.x,y-player.y)<16){burst(x+.5,y+.5,z+1,'#6fc35a',14);logMsg(`你種的${SAP[id].n}長大了！`)}}}
+function drawMat(c,sx,sy){const pts=[[16,17],[29,23.5],[16,30],[3,23.5]];c.fillStyle='#c8a46a';c.beginPath();pts.forEach((q,i)=>i?c.lineTo(sx+q[0],sy+q[1]):c.moveTo(sx+q[0],sy+q[1]));c.closePath();c.fill();c.strokeStyle='#8a6a3a';c.lineWidth=1;for(let k=1;k<5;k++){const t=k/5;c.beginPath();c.moveTo(sx+16-13*t,sy+17+6.5*t);c.lineTo(sx+29-13*t,sy+23.5+6.5*t);c.stroke()}c.fillStyle='#ff5e2c';c.fillRect(sx+14,sy+20,4,2)}
+function drawSapling(c,cx,by,id,sw){const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(cx+x),Math.round(by+y),w,h)};const s=Math.round(sw||0);
+ const trunk=id===47?'#a07a4e':'#6b4a2e';R(0,-7,1,7,trunk);
+ if(id===46){R(-1+s,-10,3,3,'#2f6b3a');R(-3+s,-8,2,2,'#3f7a45');R(2+s,-8,2,2,'#3f7a45')}
+ else if(id===47){R(-4+s,-9,4,1,'#6cbf4a');R(1+s,-9,4,1,'#6cbf4a');R(-5+s,-8,1,1,'#6cbf4a');R(5+s,-8,1,1,'#6cbf4a');R(0+s,-10,1,1,'#8fd96a')}
+ else if(id===48){R(-3+s,-11,7,4,'#3f8f3a');R(-1+s,-12,3,1,'#3f8f3a');R(1+s,-10,1,1,'#ffd23f')}
+ else{R(-3+s,-9,6,3,'#2e5e3a');R(-1+s,-10,2,1,'#5d8a6a');R(-2,-1,1,1,trunk);R(2,-1,1,1,trunk)}
+ R(-2,-1,5,1,'#7a5a3a')}
+
+/* ================= 林投蓆：晚上睡覺跳過夜晚 ================= */
+function swapItem(a,b){const i=hotbar.indexOf(a);removeItem(a);addItem(b,1,true);if(i>=0){hotbar=hotbar.map(h=>h===b?0:h);hotbar[i]=b}}
+function useBucket(){const id=held();if((id!==180&&id!==181)||!hover||hover.mon||hover.ani||hover.npc)return false;const h=hover;
+ if(id===180){if(h.id!==WATER){logMsg('拿空木桶對著水面按右鍵，就能裝水');return true}if(!reachOK(h.x,h.y,h.z)){logMsg('太遠了，靠近一點');return true}
+  const i=IX(h.x,h.y,h.z);if(placed.has(i)){setB(h.x,h.y,h.z,AIR);placed.delete(i)}swapItem(180,181);AU.play('splash');burst(h.x+.5,h.y+.5,h.z+1,'#9fd0ff',8);logMsg('裝了一桶水');return true}
+ let x=h.x,y=h.y,z=h.z;if(h.id!==WATER){if(h.face==='top')z++;else if(h.face==='left')y++;else x++}else z++;
+ if(x<0||y<0||x>=W||y>=D||z<1||z>=H){return true}const cur=raw(x,y,z);if(cur!==AIR&&!isPlant(cur)){logMsg('這格已經有東西了');return true}
+ if(!reachOK(x,y,z)){logMsg('太遠了，靠近一點');return true}
+ setB(x,y,z,WATER);placed.add(IX(x,y,z));swapItem(181,180);AU.play('splash');burst(x+.5,y+.5,z+.8,'#9fd0ff',10);
+ if(!G.announced.bucket){G.announced.bucket=1;logMsg('倒出一格水！先挖個坑再倒，就能做出自己的水池')}return true}
+function trySleep(){const p=player;if(!G.night){logMsg('還沒天黑，睡不著～');return}
+ if(monsters.some(m=>Math.hypot(m.x-p.x,m.y-p.y)<10)){logMsg('附近有怪物，太危險了睡不著！');return}
+ G.t=(6.5-6)/24;G.day++;G.hour=6.5;monsters=[];toast(`☀ 一覺好眠……第 ${G.day} 天早上`);AU.play('dawn');p.hp=Math.min(p.maxHp,p.hp+4);saveGame(false)}
+
+/* ================= 夥伴場域：蓋出特定場域，其他鹽海新鮮人就會搬來 ================= */
+const HABITATS=[
+ {id:'akuang',req:[{l:'鹽田瓦盤／鹽塊',k:[PAN,SALT],n:6},{l:'天人菊',k:[21],n:2},{l:'白天',day:1}],name:'陽光曬鹽場',need:'鹽田瓦盤或鹽塊 ×6、天人菊 ×2（白天）',chk:c=>(c[PAN]||0)+(c[SALT]||0)>=6&&(c[21]||0)>=2&&!G.night,gift:[[106,1],[5,2]],perk:'身上會發光：住處 6 格內不會冒出怪物；聊天時偶爾送你鹽晶或鹽塊',
+  lines:['陽光曬得剛剛好，鹽也閃閃發亮！','我在這裡，晚上就不怕黑了。','今天也一起努力曬鹽吧！']},
+ {id:'api',req:[{l:'水',k:[WATER],n:8},{l:'海茄苳葉',k:[18],n:2},{l:'魚餌',bait:1,n:1}],name:'濕地棲地',need:'水 ×8（可用水桶自己倒）、海茄苳葉 ×2、地上放 1 份魚餌',chk:(c,b)=>(c[WATER]||0)>=8&&(c[18]||0)>=2&&b>=1,gift:[[102,2]],perk:'聊天時偶爾會送你虱目魚',
+  lines:['這片濕地好像我的老家。','噓……小聲點，鳥兒在休息。','謝謝你幫大家守護濕地！']},
+ {id:'apo',req:[{l:'沙灘',k:[SAND],n:6},{l:'蚵殼堆',k:[OYSTER],n:2},{l:'水',k:[WATER],n:4}],name:'海浪沙灘',need:'沙灘 ×6、蚵殼堆 ×2、水 ×4（可用水桶自己倒）',chk:c=>(c[SAND]||0)>=6&&(c[OYSTER]||0)>=2&&(c[WATER]||0)>=4,gift:[[12,1],[102,1]],perk:'聊天時偶爾會送你海邊的小禮物',
+  lines:['浪花……嘩啦嘩啦……','我、我是阿波，請多指教。','今天的海很溫柔喔。']},
+ {id:'ahsiu',req:[{l:'原木',k:[LOG,15],n:8},{l:'林投',k:[44],n:2}],name:'防風林',need:'樹幹（原木）×8、林投 ×2',chk:c=>((c[LOG]||0)+(c[15]||0))>=8&&(c[44]||0)>=2,gift:[[46,1],[131,2]],perk:'聊天時偶爾會送你樹苗或種子',
+  lines:['咻～風從樹林穿過去好舒服！','有防風林在，大家就不怕風沙了。','要不要比賽誰跑得快？']},
+ {id:'salt',req:[{l:'鹽塊',k:[SALT],n:8},{l:'鹽燈',k:[LAMP],n:1}],name:'小鹽山',need:'鹽塊 ×8、鹽燈 ×1',chk:c=>(c[SALT]||0)>=8&&(c[LAMP]||0)>=1,gift:[[5,3]],perk:'聊天時偶爾會送你鹽塊',
+  lines:['這座鹽山堆得不錯嘛。','哼，曬得還不夠白。','兄弟，一起來曬鹽！']},
+];
+let npcs=[],habT=0,placed=new Set(),habHint=null;
+function habParts(h,c,b){return h.req.map(q=>q.day?{l:q.l,have:G.night?0:1,n:1,day:1}:q.bait?{l:q.l,have:b,n:q.n}:{l:q.l,have:q.k.reduce((a,k)=>a+(c[k]||0),0),n:q.n,water:q.k.length===1&&q.k[0]===WATER})}
+function showHabHint(){const e=$('#habHint');if(!habHint||panelOpen||paused||state!=='play'){e.style.display='none';return}
+ e.innerHTML=habHint.map(H=>`🏡 <b>${H.name}</b>（${H.who}）：`+H.parts.map(q=>`${q.l} ${q.day?(q.have?'✓':'（要白天）'):Math.min(q.have,q.n)+'/'+q.n+(q.have>=q.n?' ✓':'')}`).join('　・　')).join('<br>')+'<br><small style="color:#9fb6d6">黃色虛線框＝偵測範圍（以你站的位置為中心）</small>';e.style.display='block'}
+const npcChar=h=>h.id==='salt'?(['ahsien','hsiaohsien'].find(id=>!(player&&player.ch.id===id)&&!npcs.some(n=>n.id===id))||null):h.id;
+const habOf=id=>HABITATS.find(h=>h.id===id);
+function scanHabitats(){const p=player;const px=Math.floor(p.x),py=Math.floor(p.y),pz=Math.floor(p.z);const c={};
+ for(let dx=-3;dx<=3;dx++)for(let dy=-3;dy<=3;dy++)for(let dz=-2;dz<=3;dz++){const X=px+dx,Y=py+dy,Z=pz+dz;const v=raw(X,Y,Z);if(!v)continue;if(v===WATER||placed.has(IX(X,Y,Z)))c[v]=(c[v]||0)+1}
+ const b=baits.filter(q=>Math.abs(q.x-p.x)<3.6&&Math.abs(q.y-p.y)<3.6).length;
+ let cands=[];
+ for(const h of HABITATS){const cid=npcChar(h);if(!cid||cid===p.ch.id)continue;if(h.id==='salt'?npcs.some(n=>n.hab==='salt'&&Math.hypot(n.home.x-p.x,n.home.y-p.y)<8):npcs.some(n=>n.hab===h.id))continue;
+  const parts=habParts(h,c,b);const own=parts.filter(q=>!q.water&&!q.day&&q.have>0).length>=2;
+  if(own){const sc=parts.reduce((a,q)=>a+Math.min(1,q.have/q.n),0)/parts.length;cands.push({sc,name:h.name,who:CHARS.find(q=>q.id===cid).name,parts,cx:px,cy:py,cz:pz})}
+  if(parts.every(q=>q.have>=q.n)){const ch=CHARS.find(q=>q.id===cid);const n={kind:'npc',hab:h.id,id:cid,x:p.x+1.2,y:p.y+.5,z:p.z,vz:0,onGround:false,r:.28,h:1.4,home:{x:p.x,y:p.y,z:p.z},anim:0,fx:-1,fy:1,moving:false,wt:0,tx:p.x,ty:p.y,giftDay:0};
+   npcs.push(n);cands=[];toast(`✨ ${ch.name}被「${h.name}」吸引過來了！`);logMsg(`${ch.name}成為你的夥伴，會住在這附近。點一下可以聊天、領每日禮物`);AU.play('rare');burst(n.x,n.y,n.z+1,'#ffd23f',20)}}
+ cands.sort((a,b)=>b.sc-a.sc);habHint=cands.length?cands.slice(0,2):null;showHabHint()}
+function updateNPCs(dt){habT-=dt;if(habT<=0){habT=1;scanHabitats()}
+ for(const n of npcs){n.anim+=dt;n.wt-=dt;if(n.wt<=0){n.wt=2+Math.random()*4;n.tx=n.home.x+(Math.random()-.5)*5;n.ty=n.home.y+(Math.random()-.5)*5}
+  const dx=n.tx-n.x,dy=n.ty-n.y,d=Math.hypot(dx,dy);n.moving=d>.3;if(n.moving){n.fx=dx/d;n.fy=dy/d;moveEnt(n,n.fx*1.4*dt,n.fy*1.4*dt)}gravity(n,dt);smoothZ(n,dt);
+  if(Math.hypot(n.x-n.home.x,n.y-n.home.y)>9){n.x=n.home.x;n.y=n.home.y;n.z=n.home.z}}}
+function talkNPC(n){const h=habOf(n.hab),ch=CHARS.find(q=>q.id===n.id);const line=h.lines[Math.floor(Math.random()*h.lines.length)];
+ if(n.giftDay!==G.day){n.giftDay=G.day;if(Math.random()<.45){const[id,k]=h.gift[Math.floor(Math.random()*h.gift.length)];addItem(id,k);toast(`${ch.name}：「${line}」 🎁 送你${nameOf(id)}！`);AU.play('catch');return}toast(`${ch.name}：「${line}」`)}else toast(`${ch.name}：「${line}」`);AU.play('select')}
+function npcLightCovers(x,y){return npcs.some(n=>n.id==='akuang'&&Math.hypot(n.x-x,n.y-y)<6)}
+
 /* ================= GAME STATE ================= */
-const CYCLE=480; // 8 分鐘一天
+const CYCLE=600; // 10 分鐘一天
 let state='menu',paused=false,selChar=0;
 const G={t:1/24,day:1,dark:0,night:false,hour:7,announced:{}};
 let player=null,monsters=[],particles=[];
@@ -877,7 +1099,7 @@ function hurtMonster(m,dmg,fromX,fromY){m.hp-=dmg;m.flash=.15;const dx=m.x-fromX
  if(m.hp<=0){killMonster(m,true)}}
 function killMonster(m,byPlayer){m.dead=true;AU.play('mondie');burst(m.x,m.y,m.z+.4,'#ffffff',14);
  if(!byPlayer)return;
- if(m.type==='crab'){if(Math.random()<.45)addItem(104);if(Math.random()<.05)rareDrop(119)}
+ if(m.type==='crab'){if(Math.random()<.45)addItem(104);if(Math.random()<.03)rareDrop(119)}
  else if(m.type==='ghost'){if(Math.random()<.45)addItem(106);if(Math.random()<.03)rareDrop(120)}
  else if(m.type==='golem'){addItem(SALT,3);addItem(106,Math.random()<.5?2:1);if(Math.random()<.35)rareDrop(121)}}
 function rareDrop(id){addItem(id,1,true);toast(`✨ 稀有寶物！獲得「${nameOf(id)}」`);logMsg(`✨ ${nameOf(id)}：${ITEMS[id].desc}`);AU.play('rare');burst(player.x,player.y,player.z+1.2,'#ffd23f',26)}
@@ -949,36 +1171,42 @@ function attack(target){const p=player;if(p.atkCd>0)return;p.atkCd=.42;p.swing=.
  const h=held();let dmg=(h&&ITEMS[h]&&ITEMS[h].dmg?ITEMS[h].dmg:2)+(p.ch.dmg||0)+(eq.hand===146?2:0);if(h===151&&t.type==='ghost')dmg*=2;hurtMonster(t,dmg,p.x,p.y)}
 function eat(){const id=held();const it=ITEMS[id];if(!it||!it.food){logMsg('手上沒有食物喔');return false}const p=player;if(p.food>=20&&p.hp>=p.maxHp){logMsg('已經吃飽了');return true}
  removeItem(id);let fd=it.food,hl=it.heal||0;if(eq.body===142)fd=Math.round(fd*1.3);if(eq.hand===147)hl=Math.max(hl+1,Math.round(hl*1.5));p.food=Math.min(20,p.food+fd);p.hp=Math.min(p.maxHp,p.hp+hl);AU.play('eat');if(id===138){p.buff=40;logMsg('暖呼呼的鹽滷豆花！40 秒內快速回血')}else logMsg(`吃了${it.n}，好好吃！`);return true}
-function breakBlock(x,y,z){const id=raw(x,y,z);
+function breakBlock(x,y,z){const id=raw(x,y,z);placed.delete(IX(x,y,z));
  if(isCrop(id)){harvestCrop(x,y,z,id);return}
  if(isDoor(id)){const grp=doorGroup(x,y,z);for(const[a,b,c]of grp)setB(a,b,c,AIR);AU.play('break',900);burstBlock(x,y,z,24);addItem(26,Math.max(1,Math.round(grp.length/2)));return}
  setB(x,y,z,AIR);lights.delete(IX(x,y,z));AU.play('break',id===SALT?1400:id===STONE?500:isPlant(id)?2200:800);
+ if(id===LOG||id===15){let zz=z+1,n=0;while(raw(x,y,zz)===id&&n<12){setB(x,y,zz,AIR);burstBlock(x,y,zz,id,3);zz++;n++}if(n)addItem(id,n,true);
+  let lc=0,sp=0;for(let dz=-1;dz<=n+4;dz++)for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++){const X=x+dx,Y=y+dy,Z=z+dz;const v=raw(X,Y,Z);if(v!==LEAF&&v!==16&&v!==17&&v!==18)continue;
+   let sup=false;for(let ax=-2;ax<=2&&!sup;ax++)for(let ay=-2;ay<=2&&!sup;ay++)for(let az=-3;az<=1&&!sup;az++){const w2=raw(X+ax,Y+ay,Z+az);if(w2===LOG||w2===15)sup=true}
+   if(!sup){setB(X,Y,Z,AIR);burstBlock(X,Y,Z,v,3);if(Math.random()<.6){addItem(v,1,true);lc++}if(Math.random()<.15){addItem(LEAF2SAP[v],1,true);sp++}}}
+  if(n||lc)logMsg(`整棵樹倒了！+${n+1} ${BL[id].n}`+(lc?`、+${lc} 樹葉`:'')+(sp?`、+${sp} 樹苗`:''))}
  burstBlock(x,y,z,id);const drop=BL[id].drop||id;if(id!==BEDROCK){addItem(drop);if(eq.body===113&&!isPlant(id)&&Math.random()<.25)addItem(drop)}
  if(id===GRASS&&Math.random()<(eq.hand===143?.35:.12)){const q=Math.random();addItem(q<.5?131:q<.8?132:133);if(!G.announced.seed){G.announced.seed=1;logMsg('撿到種子了！合成鋤頭（E），把草地翻成農田再種下')}}
- const up=raw(x,y,z+1);if(up===TORCH||isPlant(up)){setB(x,y,z+1,AIR);lights.delete(IX(x,y,z+1));addItem(up)}else if(isCrop(up))harvestCrop(x,y,z+1,up)}
+ if(LEAF2SAP[id]&&Math.random()<.15)addItem(LEAF2SAP[id]);
+ const up=raw(x,y,z+1);if(up===TORCH||isDecor(up)){setB(x,y,z+1,AIR);lights.delete(IX(x,y,z+1));addItem(up)}else if(isCrop(up))harvestCrop(x,y,z+1,up)}
 function fishing(x,y,z){const ch=player.ch;const pan=raw(x,y,z-1)===PAN;burst(x+.5,y+.5,z+1,'#9fd0ff',8);AU.play('splash');
  if(pan){if(Math.random()<(ch.swim?.95:.75)+(eq.hand===149?.3:0)){addItem(SALT);if(petActive('stilt')&&Math.random()<.5)addItem(SALT);AU.play('catch');logMsg('曬出了亮晶晶的鹽！')}else logMsg('鹽還沒曬好……')}
  else{if(Math.random()<(ch.swim?.75:.4)+(petActive('mudskipper')?.25:0)+(eq.hand===149?.3:0)){addItem(102);AU.play('catch');logMsg('釣到一尾虱目魚！')}else logMsg('魚跑掉了……')}}
 function placeTarget(h){const id=held();if(!h||h.mon||!placeable(id))return null;
  let x=h.x,y=h.y,z=h.z;
- if(h.id===TORCH||isPlant(h.id)||isDoor(h.id)||isCrop(h.id))return null;
- if((id===TORCH||isPlant(id))&&h.id!==WATER)z++;
+ if(h.id===TORCH||isDecor(h.id)||isDoor(h.id)||isCrop(h.id))return null;
+ if((id===TORCH||isDecor(id))&&h.id!==WATER)z++;
  else if(h.id!==WATER){if(h.face==='top')z++;else if(h.face==='left')y++;else x++;}
  const T={x,y,z,ok:false,why:''};
  if(x<0||y<0||x>=W||y>=D||z<1||z>=H){T.why='超出地圖範圍';return T}
  const cur=raw(x,y,z);if(cur!==AIR&&cur!==WATER){T.why='這格已經有東西';return T}
  if(!reachOK(x,y,z)){T.why='太遠了，靠近一點';return T}
  if(solid(id)&&entInCell(x,y,z)){T.why='有人站在這格';return T}
- if((id===TORCH||isPlant(id))&&!solidAt(x,y,z-1)){T.why=id===TORCH?'火把要插在方塊上面':'花要種在方塊上面';return T}
+ if((id===TORCH||isDecor(id))&&!solidAt(x,y,z-1)){T.why=id===TORCH?'火把要插在方塊上面':'要放在方塊上面';return T}
  if(id===26){const c2=raw(x,y,z+1);if(z+1>=H||(c2!==AIR&&c2!==WATER)){T.why='門需要兩格高的空間';return T}if(entInCell(x,y,z+1)){T.why='有人站在這格';return T}}
  T.ok=true;return T}
 function tryPlace(){const T=placeTarget(hover);if(!T)return false;if(!T.ok){logMsg(T.why);return false}
  const id=held(),{x,y,z}=T;
- setB(x,y,z,id);if(id===26)setB(x,y,z+1,26);removeItem(id);if(id===TORCH||id===LAMP)lights.add(IX(x,y,z));AU.play('place');return true}
+ setB(x,y,z,id);placed.add(IX(x,y,z));if(id===26)setB(x,y,z+1,26);if(isSapling(id)){saplings.add(IX(x,y,z));sapProg.set(IX(x,y,z),0);logMsg(`種下${SAP[id].n}樹苗，大約 1.5 個白天會長大`)}removeItem(id);if(id===TORCH||id===LAMP)lights.add(IX(x,y,z));AU.play('place');return true}
 function updateMining(dt){
  if(!mouse.left||!hover||state!=='play'){mining=null;return}
  if(hover.mon){attack(hover.mon);return}
- if(hover.ani)return;
+ if(hover.ani||hover.npc)return;
  const {x,y,z,id}=hover;if(raw(x,y,z)!==id||!BL[id]){mining=null;return}if(!reachOK(x,y,z)){mining=null;if(mouse.type!=='mouse'&&!G.farTold){G.farTold=1;logMsg('太遠了，走近一點再挖（方塊外框變亮才挖得到）');setTimeout(()=>G.farTold=0,4000)}return}
  if(!mining||mining.x!==x||mining.y!==y||mining.z!==z){mining={x,y,z,prog:0,snd:0}}
  const hard=id===WATER?(player.ch.swim?1:1.8):BL[id].h;if(!isFinite(hard))return;
@@ -987,7 +1215,7 @@ function updateMining(dt){
  if(mining.prog>=1){if(id===WATER)fishing(x,y,z);else breakBlock(x,y,z);mining=null}}
 
 /* ================= PARTICLES ================= */
-const BCOL={15:'#a07a4e',16:'#6cbf4a',17:'#3f8f3a',18:'#2e5e3a',19:'#d94fa3',20:'#ffffff',21:'#ffd23f',22:'#7b6fd6',23:'#c84a5a',24:'#bfe6ff',25:'#f2f4f6',26:'#78bef0',1:'#6cbf4a',2:'#8a6a45',3:'#ecd9a0',4:'#aaa498',5:'#ffffff',6:'#6b4a2e',7:'#2f6b3a',8:'#9fd0ff',9:'#c8995a',10:'#ff5e2c',11:'#8f8b86',12:'#d9d4c7',14:'#ffe98a'};
+const BCOL={51:'#ffd23f',52:'#ff7a4a',53:'#3fb4bf',54:'#5fb04a',55:'#ffffff',56:'#3fa6ad',57:'#c8d2d9',46:'#3f7a45',47:'#6cbf4a',48:'#3f8f3a',49:'#2e5e3a',50:'#c8a46a',43:'#6fc35a',44:'#4f8f3a',45:'#ffffff',42:'#f6f7f8',15:'#a07a4e',16:'#6cbf4a',17:'#3f8f3a',18:'#2e5e3a',19:'#d94fa3',20:'#ffffff',21:'#ffd23f',22:'#7b6fd6',23:'#c84a5a',24:'#34a8b8',25:'#f2f4f6',26:'#78bef0',1:'#6cbf4a',2:'#8a6a45',3:'#ecd9a0',4:'#aaa498',5:'#ffffff',6:'#6b4a2e',7:'#2f6b3a',8:'#9fd0ff',9:'#c8995a',10:'#ff5e2c',11:'#8f8b86',12:'#d9d4c7',14:'#ffe98a'};
 function burst(x,y,z,c,n){for(let i=0;i<n;i++)particles.push({x,y,z,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,vz:2+Math.random()*3,life:.5+Math.random()*.4,c})}
 function burstBlock(x,y,z,id,n=10){burst(x+.5,y+.5,z+.6,BCOL[id]||'#fff',n)}
 function updateParticles(dt){for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vz-=12*dt;p.life-=dt}particles=particles.filter(p=>p.life>0)}
@@ -1031,7 +1259,7 @@ function drawBird(type,f){const api=type==='api';const g=grid(api?26:20,15);cons
  goutline(g,'#33404e');return gcanvas(g)}
 const BIRD_SPR={};const birdSpr=(t,f)=>BIRD_SPR[t+f]||(BIRD_SPR[t+f]=drawBird(t,f));
 let birds=[],birdT=6;
-function spawnFlock(){const api=Math.random()<.35;const dir=Math.random()<.5?1:-1;const y0=12+Math.random()*bh*.45;const x0=dir>0?-30:bw+30;const sp=(26+Math.random()*10)*dir;
+function spawnFlock(){const api=Math.random()<.08;const dir=Math.random()<.5?1:-1;const y0=12+Math.random()*bh*.45;const x0=dir>0?-30:bw+30;const sp=(26+Math.random()*10)*dir;
  if(api){birds.push({t:'api',x:x0,y:y0,vx:sp*1.1,ph:Math.random()*6,cx:cam.x,cy:cam.y});logMsg('看！阿皮從天上飛過去了～')}
  else{const n=3+Math.floor(Math.random()*4);for(let i=0;i<n;i++)birds.push({t:'egret',x:x0-dir*i*16,y:y0+(i%2?1:-1)*Math.ceil(i/2)*7,vx:sp,ph:i*.7,cx:cam.x,cy:cam.y})}
  AU.play('bird')}
@@ -1054,19 +1282,20 @@ function drawSky(){const k=G.dark/.84;const h=G.hour;const dusk=(h>16.5&&h<20)||
  drawBgClouds();
 }
 function drawTorch(sx,sy,x,y){const f=Math.sin(time*18+x*3+y*7);ctx.fillStyle='#7a5230';ctx.fillRect(sx+15,sy+13,2,11);ctx.fillStyle='#ff5e2c';ctx.fillRect(sx+14,sy+9+(f>.5?1:0),4,5);ctx.fillStyle='#fff100';ctx.fillRect(sx+15,sy+8+(f>0?0:1),2,4)}
-function drawEnt(e){const s=scr(e.x,e.y,e.z);
+function drawEnt(e){if(e.crit){drawCritter(e);return}const s=scr(e.x,e.y,e.rz!==undefined?e.rz:e.z);
  if(e.kind==='bait'){const X=Math.round(s.x),Y=Math.round(s.y);ctx.fillStyle='#7f9bb5';ctx.fillRect(X-3,Y-3,6,2);ctx.fillStyle='#c9d6e3';ctx.fillRect(X-2,Y-4,4,1);ctx.fillStyle='#d8342c';ctx.fillRect(X+2,Y-3,1,1);return}
  let gz=0;for(let z=Math.min(H-1,Math.floor(e.z+.01));z>=0;z--){if(solidAt(Math.floor(e.x),Math.floor(e.y),z)||raw(Math.floor(e.x),Math.floor(e.y),z)===WATER){gz=z+1;break}}
  const ss=scr(e.x,e.y,gz);const sw=e.kind==='ani'?(e.type==='buffalo'?16:6):10;if(!(e.kind==='player'&&riding))ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(Math.round(ss.x-sw/2),Math.round(ss.y-1),sw,2);ctx.fillRect(Math.round(ss.x-sw/3),Math.round(ss.y-2),Math.round(sw*2/3),4);
  if(e.kind==='player'&&e.inv>0&&Math.floor(time*16)%2)return;
  const sdx=e.fx-e.fy,sdy=e.fx+e.fy;const isA=e.kind==='ani';const back=!isA&&sdy<-.15;const flip=isA?sdx>.1:sdx<-.1;
  let spr,ox=12,oy=31,fr=(e.moving||e.kind==='mon')?Math.floor(e.anim*7)%2:0;
- if(e.kind==='player'){spr=playerSpr(e.ch.id,back,riding?0:fr);ox=14;oy=37}else if(isA){spr=aniSpr(e.type,fr);if(e.type==='buffalo')ox=18}else{spr=monSpr(e.type,fr);if(e.type==='golem'){ox=21;oy=53}}
+ if(e.kind==='npc'){spr=charSpr(e.id,back,fr)}else if(e.kind==='player'){spr=playerSpr(e.ch.id,back,riding?0:fr);ox=14;oy=37}else if(isA){spr=aniSpr(e.type,fr);if(e.type==='buffalo')ox=18}else{spr=monSpr(e.type,fr);if(e.type==='golem'){ox=21;oy=53}}
  let bob=e.kind==='player'&&e.moving&&fr&&!riding?-1:0;if(e.kind==='player'&&riding)bob=-13;if(e.kind==='player'&&e.sneak)bob+=1;
- const X=Math.round(s.x)+(e.kind==='player'&&riding?(sdx>.1?-5:5):0),Y=Math.round(s.y)+bob;
+ const X=Math.floor(s.x)+(e.kind==='player'&&riding?(sdx>.1?-5:5):0),Y=Math.floor(s.y)+bob;
  ctx.save();if(e.kind==='mon'&&e.type==='ghost')ctx.globalAlpha=.85;
  if(flip){ctx.translate(X,0);ctx.scale(-1,1);ctx.drawImage(spr,-ox,Y-oy)}else ctx.drawImage(spr,X-ox,Y-oy);
  ctx.restore();
+ if(e.kind==='npc'&&Math.hypot(e.x-player.x,e.y-player.y)<5){const nm=CHARS.find(q=>q.id===e.id).name+(e.giftDay!==G.day?' 💬':'');ctx.font='8px sans-serif';const tw=ctx.measureText(nm).width;ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(X-tw/2-3,Y-44,tw+6,11);ctx.fillStyle='#ffe680';ctx.fillText(nm,X-tw/2,Y-35)}
  if(e.kind==='mon'&&e.flash>0){ctx.fillStyle='rgba(255,255,255,.6)';if(e.type==='golem')ctx.fillRect(X-17,Y-48,34,42);else ctx.fillRect(X-8,Y-20,16,18)}
  if(e.kind==='player'&&eq.face===112&&!back){const ph=(time*0.4)%1;if(ph<.18){const A=ANCH[e.ch.id];const lw=A.gw+1;const span=(A.gl[1][0]+lw)-(A.gl[0][0]-1);const k=Math.floor(ph/.18*span);const sx0=A.gl[0][0]-1+k+2,sy0=A.gl[0][1]+6;const px=flip?27-sx0:sx0;ctx.fillStyle='#ffffff';ctx.fillRect(X-14+px,Y-37+sy0,1,2);ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(X-14+px+(flip?-1:1),Y-37+sy0-2,1,1)}}
  if(e.kind==='player'&&eq.hand&&ICON[eq.hand])ctx.drawImage(ICON[eq.hand],0,0,16,16,X+(flip?6:-15),Y-16,9,9);
@@ -1080,11 +1309,12 @@ function drawEnt(e){const s=scr(e.x,e.y,e.z);
   if(!e.pet&&e.flee>0){ctx.fillStyle='#fff100';ctx.fillRect(X,top-5,1,3);ctx.fillRect(X,top-1,1,1)}
   if(hover&&hover.ani===e){ctx.strokeStyle=held()===116?'#7dff7a':'rgba(255,255,255,.8)';ctx.strokeRect(X-8.5,top-3.5,17,Y-top+5)}}
 }
+function smoothZ(e,dt){if(e.rz===undefined||Math.abs(e.z-e.rz)>3)e.rz=e.z;else e.rz+=(e.z-e.rz)*Math.min(1,dt*14)}
 function playerOccluded(){const p=player,px=Math.floor(p.x),py=Math.floor(p.y),pz=Math.floor(p.z+.01);
  for(let i=0;i<=3;i++)for(let j=0;j<=3;j++){if(i+j===0)continue;for(let k=0;k<=i+j+1;k++){const id=raw(px+i,py+j,pz+k);if(id&&id!==WATER&&!isPlant(id)&&!isCrop(id)&&id!==TORCH&&id!==27)return true}}return false}
 function drawWorld(){
  const cx=cam.x,cy=cam.y;picks.length=0;
- const buckets=new Map();const ents=[player,...monsters,...animals,...baits];if(petEnt)ents.push(petEnt);
+ const buckets=new Map();const ents=[player,...monsters,...animals,...baits,...critters,...npcs];if(petEnt)ents.push(petEnt);
  for(const e of ents){const s=Math.floor(e.x)+Math.floor(e.y);if(!buckets.has(s))buckets.set(s,[]);buckets.get(s).push(e)}
  const sMin=Math.max(0,Math.floor((cy-16)/8)-1),sMax=Math.min(W+D-2,Math.ceil((cy+bh+H*16)/8)+1);
  const wf=Math.floor(time*2)%4;
@@ -1095,7 +1325,9 @@ function drawWorld(){
      ctx.drawImage(ex||ey?WFULL[wf]:WTOP[wf],sx,sy);if(up!==WATER)picks.push({x,y,z,sx,sy,id});continue}
     if(id===TORCH){drawTorch(sx,sy,x,y);picks.push({x,y,z,sx,sy,id});continue}
     if(id>=30&&id<=41){drawCrop(ctx,sx+16,sy+24,id,Math.sin(time*1.5+x*.7+y)*.7);picks.push({x,y,z,sx,sy,id});continue}
-    if(id>=19&&id<=23){drawPlant(ctx,sx+16,sy+24,id,Math.sin(time*1.5+x*.7+y)*.8);picks.push({x,y,z,sx,sy,id});continue}
+    if(id>=46&&id<=49){drawSapling(ctx,sx+16,sy+24,id,Math.sin(time*1.5+x*.7+y)*.6);picks.push({x,y,z,sx,sy,id});continue}
+    if(id===50){drawMat(ctx,sx,sy);picks.push({x,y,z,sx,sy,id});continue}
+    if(isPlant(id)){drawPlant(ctx,sx+16,sy+24,id,Math.sin(time*1.5+x*.7+y)*.8);picks.push({x,y,z,sx,sy,id});continue}
     if(id===27){ctx.save();ctx.globalAlpha=.28;ctx.drawImage(SPR[26],sx,sy);ctx.restore();picks.push({x,y,z,sx,sy,id});continue}
     const up=z+1<H?world[IX(x,y,z+1)]:0;const nx=x+1<W?world[IX(x+1,y,z)]:0;const ny=y+1<D?world[IX(x,y+1,z)]:0;
     if(opaque(up)&&opaque(nx)&&opaque(ny))continue;
@@ -1107,12 +1339,14 @@ function drawWorld(){
  // particles
  for(const p of particles){const s=scr(p.x,p.y,p.z);ctx.fillStyle=p.c;ctx.fillRect(Math.round(s.x),Math.round(s.y),p.life>.3?2:1,p.life>.3?2:1)}
  // 被遮住時顯示角色剪影
- if(playerOccluded()&&!(player.inv>0&&Math.floor(time*16)%2)){const e=player;const s=scr(e.x,e.y,e.z);const sdx=e.fx-e.fy,sdy=e.fx+e.fy;
+ if(playerOccluded()&&!(player.inv>0&&Math.floor(time*16)%2)){const e=player;const s=scr(e.x,e.y,e.rz!==undefined?e.rz:e.z);const sdx=e.fx-e.fy,sdy=e.fx+e.fy;
   const fr=e.moving&&!riding?Math.floor(e.anim*7)%2:0;let bob=e.moving&&fr&&!riding?-1:0;if(e.sneak)bob+=1;if(riding)bob=-13;
-  const spr=playerSpr(e.ch.id,sdy<-.15,fr);const X=Math.round(s.x)+(riding?(sdx>.1?-5:5):0),Y=Math.round(s.y)+bob;
+  const spr=playerSpr(e.ch.id,sdy<-.15,fr);const X=Math.floor(s.x)+(riding?(sdx>.1?-5:5):0),Y=Math.floor(s.y)+bob;
   ctx.save();ctx.globalAlpha=.38;if(sdx<-.1){ctx.translate(X,0);ctx.scale(-1,1);ctx.drawImage(spr,-14,Y-37)}else ctx.drawImage(spr,X-14,Y-37);ctx.restore()}
+ if(habHint){const H=habHint[0];const pz=Math.floor(player.z+.01);const P=(x,y)=>scr(x,y,pz);const c=[P(H.cx-3,H.cy-3),P(H.cx+4,H.cy-3),P(H.cx+4,H.cy+4),P(H.cx-3,H.cy+4)];
+  ctx.save();ctx.setLineDash([3,3]);ctx.lineDashOffset=-time*8;ctx.strokeStyle='rgba(255,220,80,.95)';ctx.lineWidth=1.5;ctx.beginPath();c.forEach((q,i)=>i?ctx.lineTo(Math.floor(q.x)+.5,Math.floor(q.y)+.5):ctx.moveTo(Math.floor(q.x)+.5,Math.floor(q.y)+.5));ctx.closePath();ctx.stroke();ctx.fillStyle='rgba(255,210,63,.06)';ctx.fill();ctx.restore()}
  // hover outline / 放置預覽
- if(hover&&!hover.mon&&!hover.ani&&state==='play'){const p=hover;const T=placeTarget(p);const ok=reachOK(p.x,p.y,p.z);
+ if(hover&&!hover.mon&&!hover.ani&&!hover.npc&&state==='play'){const p=hover;const T=placeTarget(p);const ok=reachOK(p.x,p.y,p.z);
   const hexPath=(sx,sy,water)=>{const o=(a,b)=>[sx+a+.5,sy+b+.5];const pts=water?[[16,0],[31,8],[16,15],[0,8]]:[[16,0],[31,8],[31,23],[16,31],[0,23],[0,8]];ctx.beginPath();pts.forEach((q,i)=>{const[a,b]=o(q[0],q[1]);i?ctx.lineTo(a,b):ctx.moveTo(a,b)});ctx.closePath();if(!water){ctx.moveTo(...o(0,8));ctx.lineTo(...o(16,16));ctx.lineTo(...o(31,8));ctx.moveTo(...o(16,16));ctx.lineTo(...o(16,31))}};
   ctx.lineWidth=1;
   {const F=(p.id===TORCH||isPlant(p.id)||isCrop(p.id))?[[16,16],[31,24],[16,31],[0,24]]:p.face==='left'?[[0,8],[16,16],[16,31],[0,23]]:p.face==='right'?[[16,16],[31,8],[31,23],[16,31]]:[[16,0],[31,8],[16,15],[0,8]];
@@ -1137,13 +1371,13 @@ function drawWorld(){
 function drawLight(){if(G.dark<=.01)return;const L=lctx;L.globalCompositeOperation='source-over';L.clearRect(0,0,bw,bh);L.fillStyle=`rgba(6,10,32,${G.dark})`;L.fillRect(0,0,bw,bh);
  L.globalCompositeOperation='destination-out';
  const glow=(x,y,r,a)=>{const g=L.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(.6,`rgba(0,0,0,${a*.55})`);g.addColorStop(1,'rgba(0,0,0,0)');L.fillStyle=g;L.fillRect(x-r,y-r,r*2,r*2)};
- const p=scr(player.x,player.y,player.z+.8);glow(p.x,p.y,player.ch.light*(inv[120]?1.7:1),.9);
+ const p=scr(player.x,player.y,player.z+.8);glow(p.x,p.y,player.ch.light*(inv[120]?1.7:1),.9);for(const n of npcs)if(n.id==='akuang'){const q=scr(n.x,n.y,n.z+.8);glow(q.x,q.y,110,1)}
  for(const i of lights){const x=i%W,y=Math.floor(i/W)%D,z=Math.floor(i/(W*D));const s=scr(x+.5,y+.5,z+.6);if(s.x<-150||s.x>bw+150||s.y<-150||s.y>bh+150)continue;const id=world[i];glow(s.x,s.y,(id===LAMP?150:108)+Math.sin(time*9+i)*3,1)}
  ctx.drawImage(lightC,0,0);
  // warm tint around torches
  ctx.save();ctx.globalCompositeOperation='lighter';for(const i of lights){const x=i%W,y=Math.floor(i/W)%D,z=Math.floor(i/(W*D));const s=scr(x+.5,y+.5,z+.6);if(s.x<-80||s.x>bw+80||s.y<-80||s.y>bh+80)continue;const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,45);g.addColorStop(0,`rgba(255,120,40,${.18*G.dark})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(s.x-45,s.y-45,90,90)}ctx.restore();
  // 怪物發光眼睛
- for(const m of monsters){const s=scr(m.x,m.y,m.z);const X=Math.round(s.x),Y=Math.round(s.y);const flip=(m.fx-m.fy)<-.1;ctx.fillStyle='#ff3355';
+ for(const m of monsters){const s=scr(m.x,m.y,m.rz!==undefined?m.rz:m.z);const X=Math.floor(s.x),Y=Math.floor(s.y);const flip=(m.fx-m.fy)<-.1;ctx.fillStyle='#ff3355';
   const G2=m.type==='golem';if(G2)ctx.fillStyle='#3ff0ff';const pts=m.type==='crab'?[[9,16],[15,16]]:G2?[[16,13],[17,13],[18,13],[24,13],[25,13],[26,13],[16,14],[17,14],[18,14],[24,14],[25,14],[26,14]]:[[8,11],[9,11],[10,11],[14,11],[15,11],[16,11]];const w=G2?42:23,ox=G2?21:12,oy=G2?53:31;for(const[a,b]of pts){const ax=flip?w-a:a;ctx.fillRect(X-ox+ax,Y-oy+b,1,1)}}
 }
 function heart(x,y,st){const P=['.XX.XX.','XXXXXXX','XXXXXXX','.XXXXX.','..XXX..','...X...'];for(let j=0;j<6;j++)for(let i=0;i<7;i++)if(P[j][i]==='X'){let c='#3b2630';if(st===2||(st===1&&i<4))c=(j===1&&i===1)?'#ffd2c0':'#ff5e2c';ctx.fillStyle='#000';ctx.fillRect(x+i,y+j+1,1,1);ctx.fillStyle=c;ctx.fillRect(x+i,y+j,1,1)}}
@@ -1171,19 +1405,20 @@ function drawHUD(){const p=player;
 }
 function render(){
  if(!player){ctx.fillStyle='#0d1420';ctx.fillRect(0,0,bw,bh);return}
- const ps=scr(player.x,player.y,player.z);const tx=cam.x+ps.x-bw/2,ty=cam.y+ps.y-bh/2-6;
- cam.x+=(tx-cam.x)*.15;cam.y+=(ty-cam.y)*.15;const rx=cam.x,ry=cam.y;
- cam.x=Math.round(cam.x+(shake>0?(Math.random()-.5)*4:0));cam.y=Math.round(cam.y+(shake>0?(Math.random()-.5)*4:0));
- drawSky();drawWorld();drawBirds();drawFgClouds();drawLight();drawHUD();drawCatchHUD();
+ const pz=player.rz!==undefined?player.rz:player.z;const wx=(player.x-player.y)*16,wy=(player.x+player.y)*8-pz*16;
+ cam.x=Math.floor(wx)-Math.floor(bw/2);cam.y=Math.floor(wy)-Math.floor(bh/2)-6;const rx=cam.x,ry=cam.y;
+ if(shake>0){cam.x+=Math.round((Math.random()-.5)*4);cam.y+=Math.round((Math.random()-.5)*4)}
+ drawSky();drawWorld();drawBirds();drawFgClouds();drawLight();drawFireflies();drawHUD();drawCatchHUD();
  cam.x=rx;cam.y=ry;
 }
 
 /* ================= PICKING ================= */
 function pickAt(mx,my){
+ for(const n of npcs){const s=scr(n.x,n.y,n.z);if(mx>=s.x-10&&mx<=s.x+10&&my>=s.y-28&&my<=s.y+1)return {npc:n}}
  for(const m of monsters){const s=scr(m.x,m.y,m.z);const gl=m.type==='golem';if(mx>=s.x-(gl?18:10)&&mx<=s.x+(gl?18:10)&&my>=s.y-(gl?50:26)&&my<=s.y+1)return {mon:m}}
  for(const a of animals){const s=scr(a.x,a.y,a.z);const hg=a.type==='stilt'||a.type==='buffalo'?20:10;const hw=a.type==='buffalo'?14:9;if(mx>=s.x-hw&&mx<=s.x+hw&&my>=s.y-hg-2&&my<=s.y+2)return {ani:a}}
  for(let i=picks.length-1;i>=0;i--){const p=picks[i];const lx=mx-p.sx,ly=my-p.sy;if(lx<0||lx>=32||ly<0||ly>=32)continue;
-  if(p.id===TORCH||isPlant(p.id)||isCrop(p.id)){const t=p.id===TORCH;if(lx>=(t?12:7)&&lx<=(t?19:25)&&ly>=6&&ly<=25)return {...p,face:'top'};continue}
+  if(p.id===TORCH||isDecor(p.id)||isCrop(p.id)){const t=p.id===TORCH;if(lx>=(t?12:7)&&lx<=(t?19:25)&&ly>=6&&ly<=25)return {...p,face:'top'};continue}
   if(Math.abs(lx-16)/16+Math.abs(ly-8)/8<=1)return {...p,face:'top'};
   if(p.id===WATER)continue;
   if(lx<16){if(ly>=8+lx/2&&ly<=24+lx/2)return {...p,face:'left'}}else if(ly>=16-(lx-16)/2&&ly<=32-(lx-16)/2)return {...p,face:'right'};
@@ -1195,10 +1430,11 @@ function logMsg(t){const L=$('#log');const d=document.createElement('div');d.tex
 let toastT;function toast(t){const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>e.style.opacity=0,3500)}
 let nameT;function showName(){const id=held();const e=$('#itemName');e.textContent=id?nameOf(id)+(ITEMS[id]&&ITEMS[id].food?'（右鍵/F 吃）':''):'空手';e.style.opacity=1;clearTimeout(nameT);nameT=setTimeout(()=>e.style.opacity=0,1600)}
 const RECIPES=[
- {t:1,out:PLANK,n:4,need:{6:1}},{t:1,out:PLANK,n:3,need:{15:1}},{t:1,out:TORCH,n:4,need:{9:1}},{t:1,out:100,n:1,need:{9:3}},{t:1,out:116,n:1,need:{9:2,7:3}},{t:1,out:130,n:1,need:{9:2,4:1}},{t:1,out:110,n:1,need:{7:3,9:2}},
+ {t:1,out:PLANK,n:4,need:{6:1}},{t:1,out:PLANK,n:3,need:{15:1}},{t:1,out:TORCH,n:4,need:{9:1}},{t:1,out:100,n:1,need:{9:3}},{t:1,out:116,n:1,need:{9:2,7:3}},{t:1,out:130,n:1,need:{9:2,4:1}},{t:1,out:110,n:1,need:{7:3,9:2}},{t:1,out:160,n:2,need:{43:3,131:1}},
  {t:2,out:101,n:1,need:{4:3,9:1}},{t:2,out:25,n:2,need:{4:1,5:1}},{t:2,out:24,n:2,need:{3:2,10:1}},{t:2,out:OYSTER,n:2,need:{3:2}},{t:2,out:117,n:3,need:{102:1}},{t:2,out:103,n:1,need:{102:1,5:1}},{t:2,out:113,n:1,need:{17:4,6:1}},{t:2,out:111,n:1,need:{21:2,19:2,20:1}},{t:2,out:LAMP,n:1,need:{5:2,10:1}},{t:2,out:26,n:1,need:{9:2,24:1}},
- {t:2,out:140,n:1,need:{16:4,9:1}},{t:2,out:142,n:1,need:{17:3,16:2,9:1}},{t:2,out:143,n:1,need:{24:1,9:1}},{t:2,out:144,n:1,need:{24:2,4:1}},{t:2,out:145,n:1,need:{9:3,20:1}},{t:2,out:147,n:1,need:{4:3,20:1,23:1}},
- {t:3,out:137,n:2,need:{135:2,9:1}},{t:3,out:138,n:1,need:{134:3,5:1}},
+ {t:2,out:57,n:4,need:{4:2,3:1}},{t:2,out:51,n:1,need:{9:1,21:2}},{t:2,out:52,n:1,need:{5:1,21:2}},{t:2,out:53,n:1,need:{9:2,24:1}},{t:2,out:54,n:1,need:{7:2,21:1}},{t:2,out:55,n:1,need:{25:1,9:1}},{t:2,out:56,n:1,need:{25:1,9:2}},
+ {t:2,out:180,n:1,need:{9:3,4:1}},{t:2,out:175,n:2,need:{45:2,20:1}},{t:2,out:50,n:1,need:{44:3,9:2}},{t:2,out:140,n:1,need:{16:4,9:1}},{t:2,out:142,n:1,need:{17:3,16:2,9:1}},{t:2,out:143,n:1,need:{24:1,9:1}},{t:2,out:144,n:1,need:{24:2,4:1}},{t:2,out:145,n:1,need:{9:3,20:1}},{t:2,out:147,n:1,need:{4:3,20:1,23:1}},
+ {t:3,out:160,n:3,need:{134:2,102:1}},{t:3,out:137,n:2,need:{135:2,9:1}},{t:3,out:138,n:1,need:{134:3,5:1}},
  {t:4,out:105,n:1,need:{104:1,5:1}},{t:4,out:SALT,n:1,need:{106:2}},{t:4,out:112,n:1,need:{106:1,4:2}},{t:4,out:108,n:1,need:{106:3,5:2}},{t:4,out:141,n:1,need:{106:1,9:2,12:1}},{t:4,out:150,n:1,need:{106:1,24:1,9:1}},{t:4,out:149,n:1,need:{25:1,106:1,21:1}},{t:4,out:146,n:1,need:{106:2,9:2,21:1}},{t:4,out:148,n:1,need:{106:2,9:1,7:2}},{t:4,out:151,n:1,need:{106:3,25:2,9:1}}];
 const TIER={1:'① 基礎：木頭就能做',2:'② 採集進階：石頭、鹽、沙、花、魚',3:'③ 農田料理：要先種田',4:'④ 夜晚素材：要打怪物'};
 function canCraft(r){for(const k in r.need)if((inv[k]||0)<r.need[k])return false;return true}
@@ -1240,7 +1476,7 @@ addEventListener('pointerup',e=>{if(!drag||e.pointerId!==drag.pid)return;const d
 addEventListener('pointercancel',()=>{drag=null;$('#dragGhost').style.display='none'});
 function itemTip(id){const it=ITEMS[id]||{};let h=`<b>${nameOf(id)}</b>${inv[id]?' ×'+inv[id]:''}`;const L=[];
  if(it.desc)L.push(it.desc);if(it.dmg)L.push('攻擊力 '+it.dmg);if(it.food)L.push(`飽足 +${it.food}`+(it.heal?`、回血 +${it.heal}`:'')+'（右鍵或 F 吃）');
- if(id<100&&!it.desc){L.push(isPlant(id)?'可以種在方塊上':id===TORCH?'插在方塊上，火光範圍內不會冒出怪物':id===LAMP?'更大的光，範圍內不會冒出怪物':id===26?'兩格高，右鍵開關':'方塊：右鍵放置')}
+ if(id<100&&!it.desc){L.push(isSculpt(id)?'山山山屋的屋頂裝飾：放在方塊上面當擺設':id===57?'清水模地坪：淺灰色的平滑方塊':isPlant(id)?'可以種在方塊上':id===TORCH?'插在方塊上，火光範圍內不會冒出怪物':id===LAMP?'更大的光，範圍內不會冒出怪物':id===26?'兩格高，右鍵開關':'方塊：右鍵放置')}
  if(it.slot)L.push(eq[it.slot]===id?'已穿上（點一下脫下）':'點一下穿上');else if(inv[id])L.push(hotbar.includes(id)?`在快捷欄第 ${hotbar.indexOf(id)+1} 格`:`點一下放進快捷欄第 ${sel+1} 格`);
  return h+(L.length?'<br><small>'+L.join('<br>')+'</small>':'')}
 let tipT;function showTip(html,x,y){const t=$('#tip');t.innerHTML=html;t.style.display='block';const r=t.getBoundingClientRect();t.style.left=Math.min(innerWidth-r.width-6,x+14)+'px';t.style.top=Math.max(4,Math.min(innerHeight-r.height-6,y+14))+'px'}
@@ -1252,12 +1488,13 @@ function renderEqPets(){const E=$('#eqGrid');E.innerHTML='';
  for(const [slot,lab] of [['head','頭'],['face','臉'],['body','身上'],['hand','手持']]){const id=eq[slot];const d=document.createElement('div');d.className='slot'+(id?' hb':'');d.title=id?nameOf(id)+'（點一下脫下）':lab;
   d.innerHTML=id?`<img src="${ICONURL[id]}"><span>${lab}</span>`:`<span style="left:0;right:0;top:15px;text-align:center;color:#7f93b5">${lab}</span>`;if(id){d.onclick=()=>{eq[slot]=0;applyEq();AU.play('select');hideTip();renderPanel()};bindTip(d,()=>itemTip(id));d.removeAttribute('title')}E.appendChild(d)}
  const PL=$('#petList');PL.innerHTML='';
- if(!pets.length)PL.innerHTML='<p class="hint">還沒有寵物。合成「捕捉網」，白天去找動物：按住 Shift（手機按「躡」）慢慢靠近，或先放「魚餌」讓牠分心，再點牠並抓準時機按下！</p>';
+ if(!pets.length)PL.innerHTML='<p class="hint">還沒有寵物。合成「捕捉網」和「寵物飼料」（每次捕捉用掉 1 份），白天去找動物：按住 Shift（手機按「躡」）慢慢靠近，或先放「魚餌」讓牠分心，再點牠並抓準時機按下！</p>';
  pets.forEach((pt,i)=>{const P=PETS[pt.type];const d=document.createElement('div');d.className='rec';d.innerHTML=`<img src="${aniSpr(pt.type,0).toDataURL()}" style="width:${pt.type==='buffalo'?36:24}px;height:32px"><div class="nm">${P.n}<small>${P.perk}</small></div><button>${activePet===i?'休息':'帶在身邊'}</button>`;
   d.querySelector('button').onclick=()=>{activePet=activePet===i?-1:i;AU.play('select');renderPanel()};PL.appendChild(d)});
- const tre=document.createElement('p');tre.className='hint';tre.innerHTML='稀有寶物：'+[[119,'夜潮蟹 5%'],[120,'霧魂 3%'],[121,'鹽堆巨人 35%']].map(([id,m])=>`${inv[id]?'✅':'❔'} <b>${inv[id]?nameOf(id):'？？？'}</b>（${m}）`).join('、');PL.appendChild(tre);
+ const hb=document.createElement('div');hb.innerHTML='<h3 style="margin-top:14px">夥伴場域（用你自己放的方塊、種的植物蓋出來，鹽海新鮮人就會搬來；水不限）</h3>'+HABITATS.map(h=>{const cid=npcChar(h),ch=CHARS.find(q=>q.id===cid),got=npcs.some(n=>n.hab===h.id),me=player&&cid===player.ch.id;return `<div class="rec"><div class="nm">${got?'✅':'❔'} <b>${h.name}</b> → ${me?'（你自己）':ch.name}<small>需要（在你身邊 3 格內，7×7 範圍）：${h.need}<br>${h.perk}</small></div></div>`}).join('');PL.appendChild(hb);
+ const tre=document.createElement('p');tre.className='hint';tre.innerHTML='稀有寶物：'+[[119,'夜潮蟹 3%'],[120,'霧魂 3%'],[121,'鹽堆巨人 35%']].map(([id,m])=>`${inv[id]?'✅':'❔'} <b>${inv[id]?nameOf(id):'？？？'}</b>（${m}）`).join('、');PL.appendChild(tre);
  const info=document.createElement('p');info.className='hint';info.innerHTML='可以抓的動物：'+Object.values(PETS).map(P=>`<b>${P.n}</b>（${P.where}，難度${'★'.repeat(P.rounds)}）`).join('、');PL.appendChild(info)}
-function togglePanel(f){hideTip();const want=f===undefined?!panelOpen:f;if(want&&(state!=='play'||$('#pause').classList.contains('show')))return;panelOpen=want;$('#panel').classList.toggle('show',panelOpen);paused=panelOpen;if(panelOpen)renderPanel();mouse.left=false}
+function togglePanel(f){hideTip();setTimeout(showHabHint,0);const want=f===undefined?!panelOpen:f;if(want&&(state!=='play'||$('#pause').classList.contains('show')))return;panelOpen=want;$('#panel').classList.toggle('show',panelOpen);paused=panelOpen;if(panelOpen)renderPanel();mouse.left=false}
 function updateClock(){const h=Math.floor(G.hour),m=Math.floor((G.hour%1)*60);$('#clock').textContent=`第 ${G.day} 天　${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${G.night?'🌙 夜晚':G.dark>0?'🌅':'☀ 白天'}`}
 
 /* ================= MAIN LOOP ================= */
@@ -1275,7 +1512,8 @@ function update(dt){
  if(state!=='play')return;
  hover=!mouse.in?null:mouse.type!=='mouse'?((hover&&(hover.mon||hover.ani||raw(hover.x,hover.y,hover.z)===hover.id))?hover:(mouse.left?pickAt(mouse.x,mouse.y):null)):!(mouse.y>=bh-24&&Math.abs(mouse.x-bw/2)<90)?pickAt(mouse.x,mouse.y):null;
  updateMining(dt);
- updateMonsters(dt);updateParticles(dt);updateBirds(dt);updateAnimals(dt);updateCatch(dt);updateCrops(dt);
+ updateMonsters(dt);updateParticles(dt);updateBirds(dt);updateAnimals(dt);updateCatch(dt);updateCrops(dt);updateCritters(dt);updateSaplings(dt);updateNPCs(dt);
+ for(const e of [player,...monsters,...animals])smoothZ(e,dt);if(petEnt){if(riding)petEnt.rz=player.rz;else smoothZ(petEnt,dt)}
  if(!G.announced.door){const px=Math.floor(player.x),py=Math.floor(player.y),pz=Math.floor(player.z);for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++)for(let dz=0;dz<2;dz++)if(!G.announced.door&&isDoor(raw(px+dx,py+dy,pz+dz))){G.announced.door=1;logMsg('水晶門：右鍵（手機用「放」模式點一下）可以開門、關門')}}
  shake=Math.max(0,shake-dt);
  if(Math.floor(time*4)!==Math.floor((time-dt)*4))updateClock();
@@ -1303,9 +1541,12 @@ cvs.addEventListener('pointerdown',e=>{if(state!=='play'||paused)return;AU.init(
  {const n=9,sw=20,x0=Math.round(bw/2-n*sw/2),y0=bh-sw-4;if(mouse.y>=y0&&mouse.y<y0+sw&&mouse.x>=x0&&mouse.x<x0+n*sw){sel=Math.floor((mouse.x-x0)/sw);showName();AU.play('select');return}}
  hover=pickAt(mouse.x,mouse.y);if(e.pointerType!=='mouse')touchDown=[mouse.x,mouse.y];
  if(catchMG){resolveCatch();return}
+ if(hover&&hover.npc){talkNPC(hover.npc);return}
+ if(e.pointerType==='mouse'?e.button===2:touchMode==='place'){if(hover&&!hover.mon&&!hover.ani&&hover.id===50){trySleep();return}}
  const right=e.button===2||(e.pointerType!=='mouse'&&touchMode==='place');
  if(right&&hover&&!hover.mon&&!hover.ani&&isDoor(hover.id)){toggleDoor(hover.x,hover.y,hover.z);return}
  if(right&&hover&&!hover.mon&&!hover.ani&&(useHoe()||plantSeed()))return;
+ if(right&&useBucket())return;
  if(right&&held()===117&&hover&&!hover.mon&&!hover.ani){placeBait();return}
  if(!right&&hover&&hover.ani){startCatch(hover.ani);return}
  if(right){const it=ITEMS[held()];
@@ -1351,8 +1592,8 @@ const Store={cloud:null,status:'local',localOK:true,
  async del(i){try{localStorage.removeItem(this.key(i))}catch(e){}if(this.cloud){try{await withTimeout(this.cloud.doc('slot'+i).delete(),9000)}catch(e){}}}
 };
 let curSlot=-1,playTime=0,autosaveT=0,saving=false;const slotCache=[null,null,null];
-function serialize(){return {v:1,seed:20260814,savedAt:Date.now(),char:selChar,day:G.day,t:G.t,world:rleEncode(world),
- p:{x:+player.x.toFixed(3),y:+player.y.toFixed(3),z:+player.z.toFixed(3),hp:player.hp,food:player.food},inv:{...inv},hotbar:hotbar.slice(),sel,playTime:Math.round(playTime),eq:{...eq},pets:pets.map(p=>({type:p.type})),activePet,cropProg:Object.fromEntries([...cropProg].map(([k,v])=>[k,Math.round(v)]))}}
+function serialize(){return {v:2,ss:4,map:L.id,seed:20260814,savedAt:Date.now(),char:selChar,day:G.day,t:G.t,world:rleEncode(world),
+ p:{x:+player.x.toFixed(3),y:+player.y.toFixed(3),z:+player.z.toFixed(3),hp:player.hp,food:player.food},inv:{...inv},hotbar:hotbar.slice(),sel,playTime:Math.round(playTime),eq:{...eq},pets:pets.map(p=>({type:p.type})),activePet,sapProg:Object.fromEntries([...sapProg].map(([k,v])=>[k,Math.round(v)])),placed:[...placed].slice(0,30000),npcs:npcs.map(n=>({hab:n.hab,id:n.id,home:n.home,giftDay:n.giftDay,x:+n.x.toFixed(2),y:+n.y.toFixed(2),z:n.z})),cropProg:Object.fromEntries([...cropProg].map(([k,v])=>[k,Math.round(v)]))}}
 async function saveGame(manual){if(curSlot<0||!player||(state!=='play'&&state!=='dead'))return null;if(saving)return null;saving=true;
  const d=serialize();slotCache[curSlot]=d;let r;try{r=await Store.set(curSlot,d)}finally{saving=false}
  const msg=r.okC?'已存檔 ✓（雲端＋這台裝置）':r.okL?'已存檔 ✓（這台裝置的瀏覽器）':'存檔失敗：這個瀏覽器不允許儲存資料';
@@ -1386,18 +1627,22 @@ function buildChars(){const C=$('#chars');CHARS.forEach((c,i)=>{const d=document
  d.onclick=()=>{selChar=i;document.querySelectorAll('.card').forEach((e,j)=>e.classList.toggle('sel',j===i));AU.init();AU.play('select');$('#selInfo').textContent=`已選擇：${c.name}`};C.appendChild(d);c._cv=cv});
  $('#selInfo').textContent=`已選擇：${CHARS[selChar].name}`;
  let f=0;setInterval(()=>{f^=1;CHARS.forEach(c=>{const g=c._cv.getContext('2d');g.clearRect(0,0,24,32);g.drawImage(charSpr(c.id,false,f),0,0)})},350)}
-function beginPlay(){riding=false;if(player)player.h=1.5;monsters=[];particles=[];animals=[];baits=[];petEnt=null;catchMG=null;G.announced={};paused=false;panelOpen=false;
+function beginPlay(){critters=[];riding=false;if(player)player.h=1.5;monsters=[];particles=[];animals=[];baits=[];petEnt=null;catchMG=null;G.announced={};paused=false;panelOpen=false;
  const ps=scr(player.x,player.y,player.z);cam.x+=ps.x-bw/2;cam.y+=ps.y-bh/2;
  G.dark=darkAt((G.t*24+6)%24);G.night=G.dark>.5;G.hour=(G.t*24+6)%24;
  ['#start','#pause','#dead','#panel'].forEach(s=>$(s).classList.remove('show'));
  state='play';autosaveT=0;updateClock();if(AU.ctx&&AU.choice==='auto'&&TRACKS[AU.cur].mood!==AU.moodNow())AU.pickTrack()}
-function startNew(){AU.init();curSlot=pendingSlot;cropProg=new Map();genWorld(20260814);player=newPlayer();inv={};eq={head:0,face:0,body:0,hand:0};pets=[];activePet=-1;hotbar=[0,0,0,0,0,0,0,0,0];sel=0;playTime=0;
- Object.assign(G,{t:1/24,day:1,started:false});addItem(TORCH,3,true);addItem(103,2,true);addItem(131,4,true);beginPlay();
+function startNew(){AU.init();curSlot=pendingSlot;cropProg=new Map();sapProg=new Map();npcs=[];placed=new Set();setLayout('v2');genWorld(20260814);player=newPlayer();inv={};eq={head:0,face:0,body:0,hand:0};pets=[];activePet=-1;hotbar=[0,0,0,0,0,0,0,0,0];sel=0;playTime=0;
+ Object.assign(G,{t:1/24,day:1,started:false});addItem(TORCH,3,true);addItem(103,2,true);addItem(131,4,true);addItem(160,2,true);beginPlay();
  toast(`歡迎來到雲嘉南濱海！${player.ch.name}出發了`);saveGame(false);
  setTimeout(()=>logMsg('按住左鍵挖方塊：先砍木麻黃取得原木'),1200);setTimeout(()=>logMsg('按 E 打開合成台：原木→木板→火把、木劍'),5000);setTimeout(()=>logMsg('點鹽田的水可以曬鹽，點魚塭可以釣虱目魚'),9000);setTimeout(()=>logMsg('按 Esc 開選單：存檔、換音樂、回首頁'),13000)}
-function loadSlot(i){const d=slotCache[i];if(!d)return;AU.init();curSlot=i;selChar=d.char||0;genWorld(d.seed||20260814);
+function loadSlot(i){const d=slotCache[i];if(!d)return;AU.init();curSlot=i;selChar=d.char||0;setLayout(d.map||'v1');genWorld(d.seed||20260814);
  try{world.set(rleDecode(d.world,W*D*H))}catch(e){toast('存檔資料損壞，無法讀取');return}
- cropProg=new Map(Object.entries(d.cropProg||{}).map(([k,v])=>[+k,v]));rebuildLights();rebuildCrops();player=newPlayer();Object.assign(player,{x:d.p.x,y:d.p.y,z:d.p.z,hp:Math.max(1,d.p.hp),food:d.p.food});
+ placed=new Set(d.placed||[]);const mig=L.wet&&!d.ss,migC=(d.ss||0)<4;if(mig)buildSanshan(L,true);if(migC)buildChurch(L,true);
+ cropProg=new Map(Object.entries(d.cropProg||{}).map(([k,v])=>[+k,v]));sapProg=new Map(Object.entries(d.sapProg||{}).map(([k,v])=>[+k,v]));rebuildLights();rebuildCrops();rebuildSaplings();
+ npcs=(d.npcs||[]).map(n=>({...n,kind:'npc',vz:0,onGround:false,r:.28,h:1.4,anim:0,fx:-1,fy:1,moving:false,wt:0,tx:n.x,ty:n.y}));player=newPlayer();Object.assign(player,{x:d.p.x,y:d.p.y,z:d.p.z,hp:Math.max(1,d.p.hp),food:d.p.food});
+ if(migC){const[px0,px1,py0,py1]=L.ch.pond;if(player.x>px0&&player.x<px1&&player.y>py0&&player.y<py1){player.x=L.ch.xc+.5;player.y=L.ch.cy0+4.5;player.z=5}setTimeout(()=>logMsg('⛪ 北門水晶教堂升級了（參考實景照片）'),1200)}
+ if(mig){const[X0,,Y0]=L.wet;if(player.x>=X0+4&&player.x<X0+17&&player.y>=Y0+5&&player.y<Y0+14){player.x=X0+8.5;player.y=Y0+15.5;player.z=5}setTimeout(()=>logMsg('🏠 山山山屋重新蓋好了（參考實景照片）'),800)}
  inv={};for(const k in d.inv)if(d.inv[k]>0)inv[+k]=d.inv[k];hotbar=(d.hotbar||[]).map(Number).concat([0,0,0,0,0,0,0,0,0]).slice(0,9);sel=d.sel||0;
  eq=Object.assign({head:0,face:0,body:0,hand:0},d.eq||{});pets=(d.pets||[]).filter(q=>PETS[q.type]);activePet=typeof d.activePet==='number'&&d.activePet<pets.length?d.activePet:-1;applyEq();player.hp=Math.max(1,Math.min(d.p.hp,player.maxHp));
  Object.assign(G,{t:d.t,day:d.day,started:true});playTime=d.playTime||0;beginPlay();toast(`讀取存檔 ${i+1}・第 ${G.day} 天`);AU.play('save')}
@@ -1406,7 +1651,7 @@ async function goHome(){if(state==='play'||state==='dead'){$('#saveMsg').textCon
  $('#start').classList.add('show');showMenuView('main');refreshSlots();if(AU.ctx&&AU.choice==='auto'&&TRACKS[AU.cur].mood!=='day')AU.pickTrack()}
 
 /* ================= 暫停選單 & 音樂 ================= */
-function togglePause(f){if(state!=='play')return;const open=f===undefined?!$('#pause').classList.contains('show'):f;if(panelOpen)togglePanel(false);
+function togglePause(f){setTimeout(showHabHint,0);if(state!=='play')return;const open=f===undefined?!$('#pause').classList.contains('show'):f;if(panelOpen)togglePanel(false);
  $('#pause').classList.toggle('show',open);paused=open;mouse.left=false;if(open){$('#saveMsg').textContent=curSlot>=0?`目前存檔：存檔 ${curSlot+1}`:'';renderMusicLists()}}
 function renderMusicLists(){document.querySelectorAll('.musicList').forEach(box=>{box.innerHTML='';
  const offB=document.createElement('button');offB.className='mitem'+(AU.musicOn?'':' on');offB.textContent='🔇 關閉音樂';offB.onclick=()=>{AU.init();toggleMusic(false)};box.appendChild(offB);
@@ -1421,7 +1666,7 @@ $('#bMenu').onclick=()=>togglePause();$('#bResume').onclick=()=>togglePause(fals
 resize();buildBlockSprites();buildIcons();buildClouds();$('#bSnd').textContent=AU.musicOn?'🔊 音樂':'🔇 音樂';buildChars();renderStoreInfo();renderMusicLists();showMenuView('main');requestAnimationFrame(frame);
 refreshSlots();Store.init().then(()=>{if(Store.cloud)refreshSlots()});
 
-window.__dbg={get hotbar(){return hotbar},toggleRide,get riding(){return riding},get petEnt(){return petEnt},set activePet(v){activePet=v},useHoe,plantSeed,updateCrops,eat,breakBlock,get crops(){return crops},spawnMonster,killMonster,rareDrop,mouse,get hover(){return hover},set hover(v){hover=v},get mining(){return mining},get catchMG(){return catchMG},startCatch,resolveCatch,spawnAnimal,get animals(){return animals},get pets(){return pets},get eq(){return eq},toggleDoor,addItem,get sel(){return sel},set sel(v){sel=v},spawnFlock,get birds(){return birds},scr,get scale(){return scale},raw,topZ,get invv(){return inv},G,get player(){return player},get monsters(){return monsters},startNew,loadSlot,goHome,saveGame,Store,AU,slotCache,setHour:h=>{G.t=((h-6+24)%24)/24},inv};
+window.__dbg={get npcs(){return npcs},get sapProg(){return sapProg},updateSaplings,trySleep,setB,talkNPC,get hotbar(){return hotbar},toggleRide,get riding(){return riding},get petEnt(){return petEnt},set activePet(v){activePet=v},useHoe,plantSeed,updateCrops,eat,breakBlock,get crops(){return crops},spawnMonster,killMonster,rareDrop,mouse,get hover(){return hover},set hover(v){hover=v},get mining(){return mining},get catchMG(){return catchMG},startCatch,resolveCatch,spawnAnimal,get animals(){return animals},get pets(){return pets},get eq(){return eq},toggleDoor,addItem,get sel(){return sel},set sel(v){sel=v},spawnFlock,get birds(){return birds},scr,get scale(){return scale},raw,topZ,get invv(){return inv},G,get player(){return player},get monsters(){return monsters},startNew,loadSlot,goHome,saveGame,Store,AU,slotCache,setHour:h=>{G.t=((h-6+24)%24)/24},inv};
 </script>
 </body>
 </html>
