@@ -125,7 +125,7 @@ body.touch #log{bottom:150px}
   <div id="menuMain">
     <button class="btn" id="bContinue" style="display:none;margin-bottom:12px">▶ 繼續冒險</button>
     <div class="mcols">
-      <div><h3>存檔</h3><div id="slots"></div><p class="hint" id="storeInfo"></p></div>
+      <div><h3>存檔</h3><div id="slots"></div><button class="btn sec small" id="bImport" style="width:100%;margin-top:2px">📥 輸入備份代碼</button><p class="hint" id="storeInfo"></p></div>
       <div><h3>音樂（Lo-fi）</h3><div class="musicList"></div><p class="hint">點一首就會開始播放；選「自動」會依遊戲中的日夜切換曲風。</p></div>
     </div>
     <div class="help">
@@ -152,12 +152,28 @@ body.touch #log{bottom:150px}
   </div>
 </div></div>
 
+<div class="ov" id="bkOv" style="z-index:40"><div class="box" style="width:min(580px,94vw)">
+  <h3 id="bkTitle" style="font-size:20px;margin-top:0"></h3>
+  <p class="hint" id="bkHint" style="font-size:13px"></p>
+  <textarea id="bkCode" spellcheck="false" style="width:100%;box-sizing:border-box;height:130px;font:12px/1.4 ui-monospace,Consolas,monospace;background:#0d1420;color:#bfe;border:3px solid #33507f;padding:8px;resize:vertical;user-select:text;-webkit-user-select:text;word-break:break-all"></textarea>
+  <div id="bkSlots" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+    <button class="btn" id="bkCopy" style="font-size:15px">📋 複製代碼</button>
+    <button class="btn sec" id="bkDown" style="font-size:15px">💾 下載成檔案</button>
+    <button class="btn sec" id="bkFile" style="font-size:15px">📂 選擇備份檔</button>
+    <button class="btn" id="bkGo" style="font-size:15px">📥 匯入</button>
+    <button class="btn sec" id="bkClose" style="font-size:15px;margin-left:auto">關閉</button>
+    <input type="file" id="bkInput" accept=".txt,text/plain" style="display:none">
+  </div>
+  <p class="hint" id="bkMsg" style="font-size:13px;min-height:1.2em"></p>
+</div></div>
 <div class="ov" id="pause"><div class="box" style="width:min(640px,94vw)">
   <h3 style="font-size:22px">⏸ 暫停選單</h3>
   <div class="mcols">
     <div style="display:flex;flex-direction:column;gap:10px">
       <button class="btn" id="bResume">▶ 繼續遊戲 (Esc)</button>
       <button class="btn sec" id="bSave">💾 立即存檔</button>
+      <button class="btn sec" id="bBackup">📤 備份代碼（換裝置用）</button>
       <button class="btn sec" id="bHome">🏠 存檔並回到首頁</button>
       <p class="hint" id="saveMsg"></p>
       <p class="hint">版本 <b class="verTxt"></b></p>
@@ -1535,7 +1551,7 @@ let last=performance.now();
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(state==='play'&&!paused)update(dt);else time+=dt;render();requestAnimationFrame(frame)}
 
 /* ================= INPUT ================= */
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=true;
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;keys[e.code]=true;
  if(catchMG&&(e.code==='Space'||e.code==='KeyJ'||e.code==='Enter')){resolveCatch();e.preventDefault();return}
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
  if(e.code==='Escape'){if(panelOpen)togglePanel(false);else togglePause();return}
@@ -1609,6 +1625,48 @@ function serialize(){return {v:2,ss:4,ver:GAME_VER,map:L.id,seed:20260814,savedA
  p:{x:+player.x.toFixed(3),y:+player.y.toFixed(3),z:+player.z.toFixed(3),hp:player.hp,food:player.food},inv:{...inv},hotbar:hotbar.slice(),sel,playTime:Math.round(playTime),eq:{...eq},pets:pets.map(p=>({type:p.type})),activePet,sapProg:Object.fromEntries([...sapProg].map(([k,v])=>[k,Math.round(v)])),placed:[...placed].slice(0,30000),npcs:npcs.map(n=>({hab:n.hab,id:n.id,home:n.home,giftDay:n.giftDay,x:+n.x.toFixed(2),y:+n.y.toFixed(2),z:n.z})),cropProg:Object.fromEntries([...cropProg].map(([k,v])=>[k,Math.round(v)]))}}
 
 
+
+/* ================= 存檔備份代碼 ================= */
+// 格式：SALT1.<deflate 壓縮後的 base64url>.<6 碼檢查碼>；不支援壓縮的瀏覽器用 SALT0（未壓縮）
+const b64u={enc:u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')},
+ dec:t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const s=atob(t);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}};
+const ck6=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h.toString(36).padStart(7,'0').slice(-6)};
+const pipe=async(u8,T)=>new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(T)).arrayBuffer());
+async function saveToCode(d){const raw=new TextEncoder().encode(JSON.stringify(d));let tag='SALT0',body;
+ if(typeof CompressionStream!=='undefined'){try{body=b64u.enc(await pipe(raw,new CompressionStream('deflate-raw')));tag='SALT1'}catch(e){}}
+ if(!body)body=b64u.enc(raw);return `${tag}.${body}.${ck6(body)}`}
+async function codeToSave(code){code=(code||'').replace(/\s+/g,'');const m=code.match(/^SALT([01])\.([A-Za-z0-9_-]+)\.([0-9a-z]{6})$/);
+ if(!m)throw new Error('這不是鹽田求生記的備份代碼（應該以 SALT 開頭）');if(ck6(m[2])!==m[3])throw new Error('代碼不完整或有打錯字，請重新複製整段');
+ let u=b64u.dec(m[2]);if(m[1]==='1'){if(typeof DecompressionStream==='undefined')throw new Error('這個瀏覽器太舊，無法解開壓縮的代碼');u=await pipe(u,new DecompressionStream('deflate-raw'))}
+ const d=JSON.parse(new TextDecoder().decode(u));if(!d||!d.world||d.char==null||!d.p)throw new Error('代碼裡沒有完整的存檔資料');return d}
+let bkMode='',bkSlot=0,bkData=null,bkArmed=false;
+const bkMsg=(t,ok)=>{const e=$('#bkMsg');e.textContent=t;e.style.color=ok===false?'#ff8a7a':ok?'#8fe3a0':''};
+const slotLabel=(d,i)=>d?`存檔 ${i+1}（${CHARS[d.char].name}・第 ${d.day} 天）`:`存檔 ${i+1}（空白）`;
+function bkShow(mode){bkMode=mode;bkArmed=false;const ex=mode==='export';
+ $('#bkTitle').textContent=ex?`📤 備份代碼：${slotLabel(slotCache[bkSlot],bkSlot)}`:'📥 輸入備份代碼';
+ $('#bkHint').innerHTML=ex?'把這段代碼複製起來（或下載成檔案）保存好。換手機、換電腦、清除瀏覽器資料之後，在首頁按「輸入備份代碼」貼上就能接著玩。<br>代碼只是存檔的快照，之後繼續玩的進度要再備份一次。':'把備份代碼整段貼在下面（或選擇之前下載的備份檔），再選要放到哪一格存檔。';
+ $('#bkCode').readOnly=ex;$('#bkCopy').style.display=ex?'':'none';$('#bkDown').style.display=ex?'':'none';$('#bkFile').style.display=ex?'none':'';$('#bkGo').style.display=ex?'none':'';$('#bkGo').textContent='📥 匯入';
+ const S=$('#bkSlots');S.innerHTML='';if(!ex){for(let i=0;i<3;i++){const b=document.createElement('button');b.className='btn small'+(i===bkSlot?'':' sec');b.textContent=slotLabel(slotCache[i],i);b.onclick=()=>{bkSlot=i;bkArmed=false;$('#bkGo').textContent='📥 匯入';[...S.children].forEach((c,j)=>c.className='btn small'+(j===i?'':' sec'))};S.appendChild(b)}}
+ bkMsg('');$('#bkOv').classList.add('show')}
+async function openBackup(i){bkSlot=i;const d=slotCache[i];if(!d)return;$('#bkCode').value='產生代碼中……';bkShow('export');
+ try{const c=await saveToCode(d);$('#bkCode').value=c;bkMsg(`代碼長度 ${c.length.toLocaleString()} 個字。內容很長是正常的（整個世界的方塊都在裡面）。`)}catch(e){$('#bkCode').value='';bkMsg('產生失敗：'+e.message,false)}}
+function openImport(){bkSlot=Math.max(0,slotCache.findIndex(d=>!d));$('#bkCode').value='';bkShow('import');setTimeout(()=>$('#bkCode').focus(),50)}
+$('#bImport').onclick=openImport;
+$('#bkClose').onclick=()=>$('#bkOv').classList.remove('show');
+$('#bkCopy').onclick=async()=>{const t=$('#bkCode');try{await navigator.clipboard.writeText(t.value);bkMsg('✓ 已複製！可以貼到 LINE 記事本、Email 或備忘錄保存',true)}catch(e){t.select();document.execCommand&&document.execCommand('copy');bkMsg('已選取整段代碼，若沒複製成功請按 Ctrl+C／長按複製',true)}};
+let dlCap=null;if(window.claude&&claude.use)claude.use('downloads').then(x=>{dlCap=x}).catch(()=>{});
+$('#bkDown').onclick=async()=>{const d=slotCache[bkSlot];const dt=new Date();const p=n=>String(n).padStart(2,'0');const txt=$('#bkCode').value;
+ const fn=`鹽田求生記_存檔${bkSlot+1}_${CHARS[d.char].name}_第${d.day}天_${dt.getFullYear()}${p(dt.getMonth()+1)}${p(dt.getDate())}.txt`;
+ if(dlCap){try{await dlCap.save({filename:fn,data:txt});bkMsg('✓ 已下載備份檔',true)}catch(e){bkMsg('沒有下載（可以改用「複製代碼」）',false)}return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download=fn;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);bkMsg('✓ 已下載備份檔',true)};
+$('#bkFile').onclick=()=>$('#bkInput').click();
+$('#bkInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('#bkCode').value=(await f.text()).trim();e.target.value='';bkMsg('已讀入備份檔，選好存檔格後按「匯入」')};
+$('#bkGo').onclick=async()=>{let d;try{d=await codeToSave($('#bkCode').value)}catch(e){bkMsg('❌ '+e.message,false);return}
+ if(slotCache[bkSlot]&&!bkArmed){bkArmed=true;$('#bkGo').textContent='確定覆蓋？';bkMsg(`⚠ ${slotLabel(slotCache[bkSlot],bkSlot)} 會被蓋掉，確定的話再按一次`,false);return}
+ if(state==='play'&&curSlot===bkSlot){bkMsg('❌ 正在玩的這一格不能覆蓋，請先回首頁',false);return}
+ const r=await Store.set(bkSlot,d);if(!r.okL&&!r.okC){bkMsg('❌ 這個瀏覽器不允許儲存資料',false);return}
+ slotCache[bkSlot]=d;renderSlots();$('#bkOv').classList.remove('show');toast(`📥 已匯入到存檔 ${bkSlot+1}：${CHARS[d.char].name}・第 ${d.day} 天`);AU.play('save')};
+$('#bBackup').onclick=async()=>{const r=await saveGame(false);if(curSlot>=0&&slotCache[curSlot])openBackup(curSlot)};
 /* ================= PWA：離線快取＋安裝 ================= */
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
 if('serviceWorker' in navigator&&self===top&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -1618,7 +1676,7 @@ $('#bInstall').onclick=async()=>{if(!instEvt)return;instEvt.prompt();const r=awa
 addEventListener('appinstalled',()=>{$('#instBar').style.display='none'});
 if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!isStandalone()&&self===top){$('#instBar').style.display='flex';$('#bInstall').style.display='none';$('#instTip').innerHTML='📲 iPhone／iPad：用 Safari 點下方「分享」→「<b>加入主畫面</b>」就能當 App 玩'}
 /* ================= 版本檢查 ================= */
-const GAME_VER='1.36.0';// 每次更新遊戲都要調高
+const GAME_VER='1.37.0';// 每次更新遊戲都要調高
 const verNum=v=>String(v).split('.').map(n=>parseInt(n)||0).reduce((a,n)=>a*1000+n,0);
 let newVer=null;
 async function checkUpdate(){try{const r=await fetch(location.href.split('#')[0].replace(/[?&]vc=\d+/,'')+(location.search?'&':'?')+'vc='+Date.now(),{cache:'no-store'});if(!r.ok)return;
@@ -1650,7 +1708,8 @@ function renderSlots(){const box=$('#slots');box.innerHTML='';
  const cb=$('#bContinue');cb.style.display=latest>=0?'':'none';if(latest>=0){const d=slotCache[latest];cb.textContent=`▶ 繼續冒險（存檔 ${latest+1}・${CHARS[d.char].name}・第 ${d.day} 天）`;cb.onclick=()=>loadSlot(latest)}
  for(let i=0;i<3;i++){const d=slotCache[i];const el=document.createElement('div');el.className='sslot'+(d?'':' empty');
   if(d){const cv=document.createElement('canvas');cv.width=24;cv.height=32;cv.getContext('2d').drawImage(charSpr(CHARS[d.char].id,false,0),0,0);el.appendChild(cv);
-   el.insertAdjacentHTML('beforeend',`<div class="si"><b>存檔 ${i+1}</b><span>${CHARS[d.char].name}・第 ${d.day} 天 ${fmtHour(d.t)}</span><small>遊玩 ${fmtTime(d.playTime)}・存於 ${fmtDate(d.savedAt)}</small></div><div class="sb2"><button class="btn small">繼續</button><button class="btn small sec del">刪除</button></div>`);
+   el.insertAdjacentHTML('beforeend',`<div class="si"><b>存檔 ${i+1}</b><span>${CHARS[d.char].name}・第 ${d.day} 天 ${fmtHour(d.t)}</span><small>遊玩 ${fmtTime(d.playTime)}・存於 ${fmtDate(d.savedAt)}</small></div><div class="sb2"><button class="btn small">繼續</button><button class="btn small sec bk">備份</button><button class="btn small sec del">刪除</button></div>`);
+   el.querySelector('.bk').onclick=()=>openBackup(i);
    el.querySelector('.btn').onclick=()=>loadSlot(i);
    const del=el.querySelector('.del');let armed=false;del.onclick=async()=>{if(!armed){armed=true;del.textContent='確定刪除？';setTimeout(()=>{armed=false;del.textContent='刪除'},3000);return}del.disabled=true;await Store.del(i);slotCache[i]=null;renderSlots()}}
   else{el.innerHTML=`<div class="si"><b>存檔 ${i+1}</b><span>空白存檔</span><small>選一位角色開始新的冒險</small></div><div class="sb2"><button class="btn small">＋ 新遊戲</button></div>`;

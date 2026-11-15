@@ -1,5 +1,5 @@
 // 鹽田求生記 Service Worker：遊戲頁面「先連網、失敗才用快取」，所以有網路時永遠拿到最新版，沒網路也能玩
-const CACHE = 'salt-game-1.36.0';
+const CACHE = 'salt-game-1.37.0';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './favicon.png', './apple-touch-icon.png',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
